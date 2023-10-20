@@ -24,19 +24,16 @@ except ImportError as e:
     raise Exception("Could not locate secrets file.") from e
 
 # Mapping constants
-# If adjusting the centerpoint/zoom, use an image size of 2x the PyPortal dimensions in order to
-# shink some of the labels in the resulting image
 GEOAPIFY_API_URL_BASE = "https://maps.geoapify.com/v1/staticmap"
-MAP_CENTER_LAT = 42.458874
-MAP_CENTER_LON = -71.021154
-MAP_ZOOM = 9
+MAP_CENTER_LAT = 42.41
+MAP_CENTER_LON = -71.17
+GRID_WIDTH_MI = 15
 MAP_STYLE = "klokantech-basic"
 
 AIO_URL_BASE = f"https://io.adafruit.com/api/v2/{secrets['aio_username']}/integrations/image-formatter"  # noqa: E501
 
 OPENSKY_URL_BASE = "https://opensky-network.org/api/states/all"
-OPENSKY_GRID_SIZE_MILES = 50
-REFRESH_INTERVAL_SECONDS = 120
+REFRESH_INTERVAL_SECONDS = 30
 
 LOCAL_TZ = "America/New_York"
 PYPORTAL = PyPortal()
@@ -83,7 +80,7 @@ def urlencode(url: str) -> str:
     return "".join(encoded_chars)
 
 
-def set_base_map(use_default: bool = False) -> None:
+def set_base_map(grid_bounds: tuple[float, float, float, float], use_default: bool = False) -> None:
     """
     Set the base map image on the PyPortal display.
 
@@ -97,13 +94,14 @@ def set_base_map(use_default: bool = False) -> None:
     If any part of this process fails, or if `use_default` is `True`, the device will fall back to
     loading the default map tile saved onboard.
     """
+    lat_min, lat_max, lon_min, lon_max = grid_bounds
     map_params = OrderedDict(
         [
             ("apiKey", secrets["geoapify_key"]),
             ("style", MAP_STYLE),
             ("format", "png"),
             ("center", f"lonlat:{MAP_CENTER_LON},{MAP_CENTER_LAT}"),
-            ("zoom", MAP_ZOOM),
+            ("area", f"rect:{lon_min},{lat_min},{lon_max},{lat_max}"),
             ("width", SKYPORTAL_DISPLAY.width * 2),
             ("height", SKYPORTAL_DISPLAY.height * 2),
         ]
@@ -122,7 +120,7 @@ def set_base_map(use_default: bool = False) -> None:
     adaIO_query_url = build_url(AIO_URL_BASE, adaIO_params)
 
     if use_default:
-        print("Skipping dynamic map tile generation")
+        print("Skipping dynamic map tile generation, loading default")
         map_img = displayio.OnDiskBitmap("./default_map.bmp")
     else:
         try:
@@ -154,25 +152,23 @@ def set_base_map(use_default: bool = False) -> None:
 def build_bounding_box(
     map_center_lat: float = MAP_CENTER_LAT,
     map_center_lon: float = MAP_CENTER_LON,
-    grid_size_miles: int = OPENSKY_GRID_SIZE_MILES,
+    grid_width_mi: int = GRID_WIDTH_MI,
 ) -> tuple[float, float, float, float]:
-    """Calculate the bounding corners of a square grid centered at the specified map center."""
+    """Calculate the bounding corners of a rectangular grid centered at the specified map center."""
     earth_radius_km = 6378.1
 
     center_lat_rad = math.radians(map_center_lat)
     center_lon_rad = math.radians(map_center_lon)
-    grid_size_km = grid_size_miles * 1.6
+    grid_size_km = grid_width_mi * 1.6
 
     # Calculate distance deltas
     ang_dist = grid_size_km / earth_radius_km
     d_lat = ang_dist
     d_lon = math.asin(math.sin(ang_dist) / math.cos(center_lat_rad))
 
+    # Scale rectangle height from the specified width
     aspect_ratio = SKYPORTAL_DISPLAY.width / SKYPORTAL_DISPLAY.height
-    if aspect_ratio < 1:
-        d_lat *= aspect_ratio
-    else:
-        d_lon *= aspect_ratio
+    d_lon *= aspect_ratio
 
     # Calculate latitude bounds
     min_center_lat_rad = center_lat_rad - d_lat
@@ -303,30 +299,7 @@ def calculate_pixel_position(
     return x, y
 
 
-# Initialization
-build_splash()
-PYPORTAL.network.connect()
-print("Wifi connected")
-PYPORTAL.get_local_time(location=LOCAL_TZ)
-set_base_map(use_default=True)
-aircraft_icons, palette = build_aircraft_icons()
-grid_bounds = build_bounding_box()
-opensky_header, opensky_url = build_opensky_request(*grid_bounds)
-print(f"\n{'='*40}\nInitialization complete\n{'='*40}\n")
-
-# Main loop
-while True:
-    aircraft: list[AircraftState] = []
-    try:
-        print("Requesting aircraft data from OpenSky")
-        flight_data = query_opensky(header=opensky_header, url=opensky_url)
-        print("Parsing OpenSky API response")
-        aircraft = parse_opensky_response(flight_data)
-        print(f"Found {len(aircraft)} aircraft")
-    except RuntimeError as e:
-        print("Error retrieving flight data from OpenSky", e)
-
-    # Purge & redraw aircraft icons
+def redraw_aircraft(aircraft: list[AircraftState]) -> None:
     while len(AIRCRAFT_GROUP):
         AIRCRAFT_GROUP.pop()
 
@@ -352,6 +325,41 @@ while True:
         AIRCRAFT_GROUP.append(icon)
 
     print(f"Skipped drawing {n_skipped} aircraft due to missing data")
+
+
+# Initialization
+build_splash()
+PYPORTAL.network.connect()
+print("Wifi connected")
+PYPORTAL.get_local_time(location=LOCAL_TZ)
+
+grid_bounds = build_bounding_box()
+set_base_map(grid_bounds=grid_bounds, use_default=True)
+
+aircraft_icons, palette = build_aircraft_icons()
+
+opensky_header, opensky_url = build_opensky_request(*grid_bounds)
+print(f"\n{'='*40}\nInitialization complete\n{'='*40}\n")
+
+# Main loop
+while True:
+    aircraft: list[AircraftState] = []
+    try:
+        print("Requesting aircraft data from OpenSky")
+        flight_data = query_opensky(header=opensky_header, url=opensky_url)
+        print("Parsing OpenSky API response")
+        aircraft = parse_opensky_response(flight_data)
+        print(f"Found {len(aircraft)} aircraft")
+    except RuntimeError as e:
+        print("Error retrieving flight data from OpenSky", e)
+    except requests.OutOfRetries as e:
+        print("Request to OpenSky timed out")
+
+    if aircraft:
+        print("Updating aircraft locations")
+        redraw_aircraft(aircraft)
+    else:
+        print("No aircraft to draw, skipping redraw")
 
     next_request_at = dt.datetime.now() + dt.timedelta(seconds=REFRESH_INTERVAL_SECONDS)
     print(f"Sleeping... next refresh at {next_request_at}")
