@@ -47,4 +47,3 @@ htmlcov
 
 # CircuitPython
 /CircuitPython*
-secrets.py

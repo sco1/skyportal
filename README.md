@@ -10,6 +10,7 @@ To get up and running, copy the following files to your PyPortal:
 
 ```
 lib/
+boot.py
 code.py
 default_map.bmp
 pyportal_startup.bmp
@@ -17,6 +18,8 @@ pyportal_startup.wav
 secrets.py
 splash.bmp
 ```
+
+**WARNING:** In order to generate the background map tile, this project's `boot.py` modifies the boot process to allow the filesystem to be used as a writeable cache. In the unlikely event that things go horribly awry you may lose the existing contents of your device, so be sure to back them up before working with this project.
 
 ### Secrets
 The following secrets are required for functionality:
