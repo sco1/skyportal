@@ -1,11 +1,15 @@
+import math
+import time
 from collections import OrderedDict
 
+import adafruit_datetime as dt
 import adafruit_requests as requests
 import board
 import displayio
 import terminalio
 from adafruit_display_text import label
 from adafruit_pyportal import PyPortal
+from circuitpython_base64 import b64encode
 
 # CircuitPython doesn't have the typing module, so throw this away at runtime
 try:
@@ -29,6 +33,11 @@ MAP_STYLE = "klokantech-basic"
 
 AIO_URL_BASE = f"https://io.adafruit.com/api/v2/{secrets['aio_username']}/integrations/image-formatter"  # noqa: E501
 
+OPENSKY_URL_BASE = "https://opensky-network.org/api/states/all"
+OPENSKY_GRID_SIZE_MILES = 50
+REFRESH_INTERVAL_SECONDS = 120
+
+LOCAL_TZ = "America/New_York"
 PYPORTAL = PyPortal()
 
 # Main display element
@@ -139,11 +148,125 @@ def set_base_map(use_default: bool = False) -> None:
     MAIN_DISPLAY_GROUP.append(map_group)
 
 
+def build_opensky_bounding_box(
+    map_center_lat: float = MAP_CENTER_LAT,
+    map_center_lon: float = MAP_CENTER_LON,
+    grid_size_miles: int = OPENSKY_GRID_SIZE_MILES,
+) -> tuple[float, float, float, float]:
+    """Calculate the bounding corners of a square grid centered at the specified map center."""
+    earth_radius_km = 6378.1
+
+    center_lat_rad = math.radians(map_center_lat)
+    center_lon_rad = math.radians(map_center_lon)
+    grid_size_km = grid_size_miles * 1.6
+
+    # Calculate distance deltas
+    ang_dist = grid_size_km / earth_radius_km
+    d_lat = ang_dist
+    d_lon = math.asin(math.sin(ang_dist) / math.cos(center_lat_rad))
+
+    aspect_ratio = SKYPORTAL_DISPLAY.width / SKYPORTAL_DISPLAY.height
+    if aspect_ratio < 1:
+        d_lat *= aspect_ratio
+    else:
+        d_lon *= aspect_ratio
+
+    # Calculate latitude bounds
+    min_center_lat_rad = center_lat_rad - d_lat
+    max_center_lat_rad = center_lat_rad + d_lat
+
+    # Calculate longitude bounds
+    min_center_lon_rad = center_lon_rad - d_lon
+    max_center_lon_rad = center_lon_rad + d_lon
+
+    # Convert from radians to degrees
+    lat_min = math.degrees(min_center_lat_rad)
+    lat_max = math.degrees(max_center_lat_rad)
+    lon_min = math.degrees(min_center_lon_rad)
+    lon_max = math.degrees(max_center_lon_rad)
+
+    return lat_min, lat_max, lon_min, lon_max
+
+
+def build_opensky_request() -> tuple[dict[str, str], str]:
+    """Build the OpenSky API authorization header & request URL for the desired location."""
+    lat_min, lat_max, lon_min, lon_max = build_opensky_bounding_box()
+    opensky_params = {
+        "lamin": lat_min,
+        "lamax": lat_max,
+        "lomin": lon_min,
+        "lomax": lon_max,
+        "extended": 1,
+    }
+    opensky_url = build_url(OPENSKY_URL_BASE, opensky_params)
+
+    opensky_auth = f"{secrets['opensky_username']}:{secrets['opensky_password']}"
+    auth_token = b64encode(opensky_auth.encode("utf-8")).decode("ascii")
+    opensky_header = {"Authorization": f"Basic {auth_token}"}
+
+    return opensky_header, opensky_url
+
+
+class AircraftState:  # noqa: D101
+    lat: float | None
+    lon: float | None
+    track: float | None
+    velocity_mps: float | None
+    on_ground: bool
+    baro_altitude_m: float | None
+    geo_altitude_m: float | None
+    vertical_rate_mps: float | None
+    aircraft_category: int
+
+    def __init__(self, state_vector: dict) -> None:
+        self.lat = state_vector[6]
+        self.lon = state_vector[5]
+        self.track = state_vector[10]
+        self.velocity_mps = state_vector[9]
+        self.on_ground = state_vector[8]
+        self.baro_altitude_m = state_vector[7]
+        self.geo_altitude_m = state_vector[13]
+        self.vertical_rate_mps = state_vector[11]
+        self.aircraft_category = state_vector[17]
+
+
+def parse_opensky_response(opensky_json: dict) -> list[AircraftState]:
+    """
+    Parse the provided OpenSky API response into a list of aircraft states.
+
+    See: https://openskynetwork.github.io/opensky-api/rest.html#id4 for state vector information.
+    """
+    return [AircraftState(state_vector) for state_vector in opensky_json["states"]]
+
+
+def query_opensky(header: dict[str, str], url: str) -> dict[str, t.Any]:  # noqa: D103
+    r = requests.get(url=url, headers=header)
+    if r.status_code != 200:
+        raise RuntimeError(f"Bad response received from OpenSky: {r.status_code}, {r.text}")
+
+    return r.json()  # type: ignore[no-any-return]
+
+
 # Initialization
 build_splash()
 PYPORTAL.network.connect()
+print("Wifi connected")
+PYPORTAL.get_local_time(location=LOCAL_TZ)
 set_base_map(use_default=True)
+opensky_header, opensky_url = build_opensky_request()
+print(f"\n{'='*40}\nInitialization complete\n{'='*40}\n")
 
 # Main loop
 while True:
-    pass
+    try:
+        print("Requesting aircraft data from OpenSky")
+        flight_data = query_opensky(header=opensky_header, url=opensky_url)
+        print("Parsing OpenSky API response")
+        aircraft = parse_opensky_response(flight_data)
+        print(f"Found {len(aircraft)} aircraft")
+    except RuntimeError as e:
+        print("Error retrieving flight data from OpenSky", e)
+
+    next_request_at = dt.datetime.now() + dt.timedelta(seconds=REFRESH_INTERVAL_SECONDS)
+    print(f"Sleeping... next refresh at {next_request_at}")
+    time.sleep(REFRESH_INTERVAL_SECONDS)

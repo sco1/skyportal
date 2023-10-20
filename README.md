@@ -10,6 +10,7 @@ To get up and running, copy the following files to your PyPortal:
 
 ```
 lib/
+aircraft_icons.bmp
 boot.py
 code.py
 default_map.bmp

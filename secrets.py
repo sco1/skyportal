@@ -10,9 +10,9 @@ secrets = {
     # Geoapify, used to generate static mapping
     "geoapify_key": "YOUR_GEOAPIFY_API_KEY",
     # Adafruit IO, used for transient image hosting
-    "aio_username" : "YOUR_AIO_USERNAME",
-    "aio_key" : "YOUR_AIO_KEY",
+    "aio_username": "YOUR_AIO_USERNAME",
+    "aio_key": "YOUR_AIO_KEY",
     # Open Sky Network credentials, for getting flight information
     "opensky_username": "YOUR_OPENSKY_USERNAME",
-    "opensky_password": "YOUR_OPENSKY_PASSWORD"
+    "opensky_password": "YOUR_OPENSKY_PASSWORD",
 }
