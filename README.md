@@ -11,6 +11,7 @@ To get up and running, copy the following files to your PyPortal:
 ```
 lib/
 code.py
+default_map.bmp
 pyportal_startup.bmp
 pyportal_startup.wav
 secrets.py
@@ -23,8 +24,8 @@ The following secrets are required for functionality:
 ```py
 secrets = {
     # WIFI information
-    "wifi_ssid": "YOUR_SSID",
-    "wifi_password": "YOUR_WIFI_PASSWORD",
+    "ssid": "YOUR_SSID",
+    "password": "YOUR_WIFI_PASSWORD",
     # Geoapify, used to generate static mapping
     "geoapify_key": "YOUR_GEOAPIFY_API_KEY",
     # Adafruit IO, used for transient image hosting

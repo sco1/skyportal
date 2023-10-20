@@ -49,6 +49,7 @@ no_lines_before = "LOCALFOLDER"
 order_by_type = false
 profile = "black"
 line_length = 100
+extend_skip = "lib"
 
 [tool.mypy]
 disallow_incomplete_defs = true
@@ -62,6 +63,7 @@ warn_redundant_casts = true
 warn_return_any = true
 warn_unused_configs = true
 warn_unused_ignores = true
+exclude = ["lib"]
 
 [tool.pyright]
 reportShadowedImports = false
