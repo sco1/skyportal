@@ -3,6 +3,7 @@ import time
 from collections import OrderedDict
 
 import adafruit_datetime as dt
+import adafruit_imageload
 import adafruit_requests as requests
 import board
 import displayio
@@ -39,10 +40,12 @@ REFRESH_INTERVAL_SECONDS = 120
 
 LOCAL_TZ = "America/New_York"
 PYPORTAL = PyPortal()
+ICON_TILE_SIZE = 16
 
 # Main display element
 SKYPORTAL_DISPLAY = board.DISPLAY
 MAIN_DISPLAY_GROUP = displayio.Group()
+AIRCRAFT_GROUP = displayio.Group()
 SKYPORTAL_DISPLAY.root_group = MAIN_DISPLAY_GROUP
 
 
@@ -148,7 +151,7 @@ def set_base_map(use_default: bool = False) -> None:
     MAIN_DISPLAY_GROUP.append(map_group)
 
 
-def build_opensky_bounding_box(
+def build_bounding_box(
     map_center_lat: float = MAP_CENTER_LAT,
     map_center_lon: float = MAP_CENTER_LON,
     grid_size_miles: int = OPENSKY_GRID_SIZE_MILES,
@@ -188,9 +191,13 @@ def build_opensky_bounding_box(
     return lat_min, lat_max, lon_min, lon_max
 
 
-def build_opensky_request() -> tuple[dict[str, str], str]:
+def build_opensky_request(
+    lat_min: float,
+    lat_max: float,
+    lon_min: float,
+    lon_max: float,
+) -> tuple[dict[str, str], str]:
     """Build the OpenSky API authorization header & request URL for the desired location."""
-    lat_min, lat_max, lon_min, lon_max = build_opensky_bounding_box()
     opensky_params = {
         "lamin": lat_min,
         "lamax": lat_max,
@@ -229,6 +236,18 @@ class AircraftState:  # noqa: D101
         self.vertical_rate_mps = state_vector[11]
         self.aircraft_category = state_vector[17]
 
+    def is_plottable(self) -> bool:
+        if self.lat is None:
+            return False
+
+        if self.lon is None:
+            return False
+
+        if self.track is None:
+            return False
+
+        return True
+
 
 def parse_opensky_response(opensky_json: dict) -> list[AircraftState]:
     """
@@ -247,17 +266,57 @@ def query_opensky(header: dict[str, str], url: str) -> dict[str, t.Any]:  # noqa
     return r.json()  # type: ignore[no-any-return]
 
 
+def build_aircraft_icons() -> tuple[displayio.Bitmap, displayio.Palette]:
+    icon_sheet, palette = adafruit_imageload.load(
+        "./aircraft_icons.bmp", bitmap=displayio.Bitmap, palette=displayio.Palette
+    )
+    palette.make_transparent(0)
+
+    MAIN_DISPLAY_GROUP.append(AIRCRAFT_GROUP)
+    return icon_sheet, palette
+
+
+def map_range(value: float, in_min: float, in_max: float, out_min: float, out_max: float) -> int:
+    """Map input value to output range"""
+    return int(out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min)))
+
+
+def calculate_pixel_position(
+    lat: float,
+    lon: float,
+    grid_bounds: tuple[float, float, float, float],
+) -> tuple[int, int]:
+    lat_min, lat_max, lon_min, lon_max = grid_bounds
+
+    # Calculate x-coordinate
+    x = map_range(lon, lon_min, lon_max, 0, SKYPORTAL_DISPLAY.width)
+
+    # Calculate y-coordinate using the Mercator projection
+    lat_rad = math.radians(lat)
+    lat_max_rad = math.radians(lat_max)
+    lat_min_rad = math.radians(lat_min)
+    merc_lat = math.log(math.tan(math.pi / 4 + lat_rad / 2))
+    merc_max = math.log(math.tan(math.pi / 4 + lat_max_rad / 2))
+    merc_min = math.log(math.tan(math.pi / 4 + lat_min_rad / 2))
+    y = map_range(merc_lat, merc_max, merc_min, 0, SKYPORTAL_DISPLAY.height)
+
+    return x, y
+
+
 # Initialization
 build_splash()
 PYPORTAL.network.connect()
 print("Wifi connected")
 PYPORTAL.get_local_time(location=LOCAL_TZ)
 set_base_map(use_default=True)
-opensky_header, opensky_url = build_opensky_request()
+aircraft_icons, palette = build_aircraft_icons()
+grid_bounds = build_bounding_box()
+opensky_header, opensky_url = build_opensky_request(*grid_bounds)
 print(f"\n{'='*40}\nInitialization complete\n{'='*40}\n")
 
 # Main loop
 while True:
+    aircraft: list[AircraftState] = []
     try:
         print("Requesting aircraft data from OpenSky")
         flight_data = query_opensky(header=opensky_header, url=opensky_url)
@@ -266,6 +325,33 @@ while True:
         print(f"Found {len(aircraft)} aircraft")
     except RuntimeError as e:
         print("Error retrieving flight data from OpenSky", e)
+
+    # Purge & redraw aircraft icons
+    while len(AIRCRAFT_GROUP):
+        AIRCRAFT_GROUP.pop()
+
+    n_skipped = 0
+    for ap in aircraft:
+        if not ap.is_plottable():
+            n_skipped += 1
+            continue
+
+        icon_x, icon_y = calculate_pixel_position(lat=ap.lat, lon=ap.lon, grid_bounds=grid_bounds)  # type: ignore[arg-type]  # noqa: E501
+
+        # Aircraft icons are provided in 45 degree increments
+        tile_index = int(ap.track / 45)  # type: ignore[operator]
+        icon = displayio.TileGrid(
+            bitmap=aircraft_icons,
+            pixel_shader=palette,
+            tile_width=ICON_TILE_SIZE,
+            tile_height=ICON_TILE_SIZE,
+            default_tile=tile_index,
+            x=icon_x,
+            y=icon_y,
+        )
+        AIRCRAFT_GROUP.append(icon)
+
+    print(f"Skipped drawing {n_skipped} aircraft due to missing data")
 
     next_request_at = dt.datetime.now() + dt.timedelta(seconds=REFRESH_INTERVAL_SECONDS)
     print(f"Sleeping... next refresh at {next_request_at}")
