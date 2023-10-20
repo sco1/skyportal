@@ -43,6 +43,7 @@ ICON_TILE_SIZE = 16
 SKYPORTAL_DISPLAY = board.DISPLAY
 MAIN_DISPLAY_GROUP = displayio.Group()
 AIRCRAFT_GROUP = displayio.Group()
+TIME_LABEL_GROUP = displayio.Group()
 SKYPORTAL_DISPLAY.root_group = MAIN_DISPLAY_GROUP
 
 
@@ -149,6 +150,25 @@ def set_base_map(grid_bounds: tuple[float, float, float, float], use_default: bo
     MAIN_DISPLAY_GROUP.append(map_group)
 
 
+def add_time_label() -> label.Label:
+    """Add a label for the last update query time."""
+    time_label = label.Label(
+        font=terminalio.FONT,
+        color=0x000000,
+        background_color=0xFFFFFF,
+        anchor_point=(0, 0),
+        anchored_position=(5, 5),
+        padding_top=2,
+        padding_bottom=2,
+        padding_left=2,
+        padding_right=2,
+    )
+    TIME_LABEL_GROUP.append(time_label)
+    MAIN_DISPLAY_GROUP.append(TIME_LABEL_GROUP)
+
+    return time_label
+
+
 def build_bounding_box(
     map_center_lat: float = MAP_CENTER_LAT,
     map_center_lon: float = MAP_CENTER_LON,
@@ -232,7 +252,7 @@ class AircraftState:  # noqa: D101
         self.vertical_rate_mps = state_vector[11]
         self.aircraft_category = state_vector[17]
 
-    def is_plottable(self) -> bool:
+    def is_plottable(self) -> bool:  # noqa: D102
         if self.lat is None:
             return False
 
@@ -245,13 +265,14 @@ class AircraftState:  # noqa: D101
         return True
 
 
-def parse_opensky_response(opensky_json: dict) -> list[AircraftState]:
+def parse_opensky_response(opensky_json: dict) -> tuple[list[AircraftState], str]:
     """
-    Parse the provided OpenSky API response into a list of aircraft states.
+    Parse the OpenSky API response into a list of aircraft states, along with the UTC timestamp.
 
     See: https://openskynetwork.github.io/opensky-api/rest.html#id4 for state vector information.
     """
-    return [AircraftState(state_vector) for state_vector in opensky_json["states"]]
+    api_time = str(dt.datetime.fromtimestamp(opensky_json["time"]))
+    return [AircraftState(state_vector) for state_vector in opensky_json["states"]], api_time
 
 
 def query_opensky(header: dict[str, str], url: str) -> dict[str, t.Any]:  # noqa: D103
@@ -263,17 +284,17 @@ def query_opensky(header: dict[str, str], url: str) -> dict[str, t.Any]:  # noqa
 
 
 def build_aircraft_icons() -> tuple[displayio.Bitmap, displayio.Palette]:
+    """Load the base aircraft icons into an icon sheet."""
     icon_sheet, palette = adafruit_imageload.load(
         "./aircraft_icons.bmp", bitmap=displayio.Bitmap, palette=displayio.Palette
     )
     palette.make_transparent(0)
 
-    MAIN_DISPLAY_GROUP.append(AIRCRAFT_GROUP)
     return icon_sheet, palette
 
 
 def map_range(value: float, in_min: float, in_max: float, out_min: float, out_max: float) -> int:
-    """Map input value to output range"""
+    """Normalize the input value to the specified output range."""
     return int(out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min)))
 
 
@@ -282,6 +303,7 @@ def calculate_pixel_position(
     lon: float,
     grid_bounds: tuple[float, float, float, float],
 ) -> tuple[int, int]:
+    """Map lat/long position to on-screen pixel coordinates."""
     lat_min, lat_max, lon_min, lon_max = grid_bounds
 
     # Calculate x-coordinate
@@ -299,19 +321,30 @@ def calculate_pixel_position(
     return x, y
 
 
-def redraw_aircraft(aircraft: list[AircraftState]) -> None:
+def redraw_aircraft(aircraft: list[AircraftState], skip_ground: bool = True) -> None:
+    """
+    Clear the currently plotted aircraft icons & redraw from the provided list of aircraft.
+
+    NOTE: Aircraft icons are not drawn if an aircraft's state vector is missing the required
+    position & orientation data.
+    """
     while len(AIRCRAFT_GROUP):
         AIRCRAFT_GROUP.pop()
 
-    n_skipped = 0
+    n_unplottable = 0
+    n_ground = 0
     for ap in aircraft:
         if not ap.is_plottable():
-            n_skipped += 1
+            n_unplottable += 1
+            continue
+
+        if skip_ground and ap.on_ground:
+            n_ground += 1
             continue
 
         icon_x, icon_y = calculate_pixel_position(lat=ap.lat, lon=ap.lon, grid_bounds=grid_bounds)  # type: ignore[arg-type]  # noqa: E501
 
-        # Aircraft icons are provided in 45 degree increments
+        # Aircraft icons are assumed to be provided in 45 degree increments
         tile_index = int(ap.track / 45)  # type: ignore[operator]
         icon = displayio.TileGrid(
             bitmap=aircraft_icons,
@@ -324,7 +357,10 @@ def redraw_aircraft(aircraft: list[AircraftState]) -> None:
         )
         AIRCRAFT_GROUP.append(icon)
 
-    print(f"Skipped drawing {n_skipped} aircraft due to missing data")
+    n_skipped = n_unplottable + n_ground
+    print(
+        f"Skipped drawing {n_skipped} aircraft ({n_unplottable} missing data, {n_ground} on ground)"
+    )
 
 
 # Initialization
@@ -335,8 +371,10 @@ PYPORTAL.get_local_time(location=LOCAL_TZ)
 
 grid_bounds = build_bounding_box()
 set_base_map(grid_bounds=grid_bounds, use_default=True)
+time_label = add_time_label()
 
 aircraft_icons, palette = build_aircraft_icons()
+MAIN_DISPLAY_GROUP.append(AIRCRAFT_GROUP)
 
 opensky_header, opensky_url = build_opensky_request(*grid_bounds)
 print(f"\n{'='*40}\nInitialization complete\n{'='*40}\n")
@@ -348,16 +386,17 @@ while True:
         print("Requesting aircraft data from OpenSky")
         flight_data = query_opensky(header=opensky_header, url=opensky_url)
         print("Parsing OpenSky API response")
-        aircraft = parse_opensky_response(flight_data)
+        aircraft, api_time = parse_opensky_response(flight_data)
         print(f"Found {len(aircraft)} aircraft")
     except RuntimeError as e:
         print("Error retrieving flight data from OpenSky", e)
-    except requests.OutOfRetries as e:
+    except requests.OutOfRetries:
         print("Request to OpenSky timed out")
 
     if aircraft:
         print("Updating aircraft locations")
         redraw_aircraft(aircraft)
+        time_label.text = f"{api_time}Z"
     else:
         print("No aircraft to draw, skipping redraw")
 
