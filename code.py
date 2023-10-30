@@ -171,26 +171,6 @@ def add_time_label() -> label.Label:
     return time_label
 
 
-class AircraftIcon:  # noqa: D101
-    def __init__(self, icon_sheet: displayio.Bitmap, palette: displayio.Palette) -> None:
-        self.icon_sheet = icon_sheet
-        self.palette = palette
-
-    @classmethod
-    def from_file(cls, filepath: str) -> AircraftIcon:
-        icon_sheet, palette = adafruit_imageload.load(
-            filepath,
-            bitmap=displayio.Bitmap,
-            palette=displayio.Palette,
-        )
-        palette.make_transparent(0)
-
-        return cls(icon_sheet=icon_sheet, palette=palette)
-
-
-BASE_ICON = AircraftIcon.from_file("./airplane_icons.bmp")
-
-
 def build_bounding_box(
     map_center_lat: float = MAP_CENTER_LAT,
     map_center_lon: float = MAP_CENTER_LON,
@@ -250,6 +230,30 @@ def build_opensky_request(
     opensky_header = {"Authorization": f"Basic {auth_token}"}
 
     return opensky_header, opensky_url
+
+
+class AircraftCategory:  # noqa: D101
+    NO_INFO = 0
+    NO_CATEGORY_INFO = 1
+    LIGHT = 2
+    SMALL = 3
+    LARGE = 4
+    HIGH_VORTEX_LARGE = 5
+    HEAVY = 6
+    HIGH_PERFORMANCE = 7
+    ROTORCRAFT = 8
+    GLIDER = 9
+    LIGHTER_THAN_AIR = 10
+    PARACHUTIST = 11
+    ULTRALIGHT = 12
+    RESERVED = 13
+    UAV = 14
+    SPACE = 15
+    SURFACE_EMERGENCY = 16
+    SURFACE_SERVICE = 17
+    POINT_OBSTACLE = 18
+    CLUSTER_OBSTACLE = 19
+    LINE_OBSTACLE = 20
 
 
 class AircraftState:  # noqa: D101
@@ -339,9 +343,49 @@ def calculate_pixel_position(
     return x, y
 
 
+class AircraftIcon:  # noqa: D101
+    def __init__(
+        self,
+        icon_sheet: displayio.Bitmap,
+        palette: displayio.Palette,
+        rotation_resolution_deg: int = 30,
+    ) -> None:
+        self.icon_sheet = icon_sheet
+        self.palette = palette
+        self.rotation_resolution_deg = rotation_resolution_deg
+
+    @classmethod
+    def from_file(cls, filepath: str, rotation_resolution_deg: int = 30) -> AircraftIcon:
+        """
+        Load the specified sprite sheet & set background transparency.
+
+        NOTE: Ensure that the sprite sheet file has a palette stored in it whose first color is the
+        color of the background; this is the color to be set as transparent in the loaded icons.
+        """
+        icon_sheet, palette = adafruit_imageload.load(
+            filepath,
+            bitmap=displayio.Bitmap,
+            palette=displayio.Palette,
+        )
+        palette.make_transparent(0)
+
+        return cls(
+            icon_sheet=icon_sheet,
+            palette=palette,
+            rotation_resolution_deg=rotation_resolution_deg,
+        )
+
+
+BASE_ICON = AircraftIcon.from_file("./airplane_icons.bmp")
+AIRCRAFT_ICONS = {
+    AircraftCategory.ROTORCRAFT: AircraftIcon.from_file("./heli_icons.bmp"),
+}
+
+
 def redraw_aircraft(
     aircraft: list[AircraftState],
     default_icon: AircraftIcon = BASE_ICON,
+    custom_icons: dict[int, AircraftIcon] = AIRCRAFT_ICONS,
     skip_ground: bool = True,
 ) -> None:
     """
@@ -366,11 +410,11 @@ def redraw_aircraft(
 
         icon_x, icon_y = calculate_pixel_position(lat=ap.lat, lon=ap.lon, grid_bounds=grid_bounds)  # type: ignore[arg-type]  # noqa: E501
 
-        # Aircraft icons are assumed to be provided in 30 degree increments
-        tile_index = int(ap.track / 30)  # type: ignore[operator]
+        icon_to_plot = custom_icons.get(ap.aircraft_category, default_icon)
+        tile_index = int(ap.track / icon_to_plot.rotation_resolution_deg)  # type: ignore[operator]
         icon = displayio.TileGrid(
-            bitmap=default_icon.icon_sheet,
-            pixel_shader=default_icon.palette,
+            bitmap=icon_to_plot.icon_sheet,
+            pixel_shader=icon_to_plot.palette,
             tile_width=ICON_TILE_SIZE,
             tile_height=ICON_TILE_SIZE,
             default_tile=tile_index,
