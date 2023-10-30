@@ -12,9 +12,11 @@ To get up and running, copy the following files to your PyPortal:
 
 ```
 lib/
+skyportal/
 airplane_icons.bmp
 boot.py
 code.py
+constants.py
 default_map.bmp
 heli_icons.bmp
 pyportal_startup.bmp
