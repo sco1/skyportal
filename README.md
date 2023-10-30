@@ -3,6 +3,8 @@ A PyPortal based flight tracker powered by [Adafruit](https://io.adafruit.com/),
 
 Heavily inspired by Bob Hammell"s PyPortal Flight Tracker ([GH](https://github.com/rhammell/pyportal-flight-tracker), [Tutorial](https://www.hackster.io/rhammell/pyportal-flight-tracker-0be6b0#story)).
 
+Thank you to [markleoart](https://www.fiverr.com/markleoart) for creating the aircraft icon sprite sheets!
+
 ## Getting Started
 Users are assumed have read through [Adafruit"s PyPortal learning guide](https://learn.adafruit.com/adafruit-pyportal). CircuitPython v8.2 is currently in use for this repository, no other versions are evaluated.
 
@@ -10,10 +12,11 @@ To get up and running, copy the following files to your PyPortal:
 
 ```
 lib/
-aircraft_icons.bmp
+airplane_icons.bmp
 boot.py
 code.py
 default_map.bmp
+heli_icons.bmp
 pyportal_startup.bmp
 pyportal_startup.wav
 secrets.py

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 import time
 from collections import OrderedDict
@@ -169,6 +171,26 @@ def add_time_label() -> label.Label:
     return time_label
 
 
+class AircraftIcon:  # noqa: D101
+    def __init__(self, icon_sheet: displayio.Bitmap, palette: displayio.Palette) -> None:
+        self.icon_sheet = icon_sheet
+        self.palette = palette
+
+    @classmethod
+    def from_file(cls, filepath: str) -> AircraftIcon:
+        icon_sheet, palette = adafruit_imageload.load(
+            filepath,
+            bitmap=displayio.Bitmap,
+            palette=displayio.Palette,
+        )
+        palette.make_transparent(0)
+
+        return cls(icon_sheet=icon_sheet, palette=palette)
+
+
+BASE_ICON = AircraftIcon.from_file("./airplane_icons.bmp")
+
+
 def build_bounding_box(
     map_center_lat: float = MAP_CENTER_LAT,
     map_center_lon: float = MAP_CENTER_LON,
@@ -231,6 +253,7 @@ def build_opensky_request(
 
 
 class AircraftState:  # noqa: D101
+    icao: str
     lat: float | None
     lon: float | None
     track: float | None
@@ -242,6 +265,7 @@ class AircraftState:  # noqa: D101
     aircraft_category: int
 
     def __init__(self, state_vector: dict) -> None:
+        self.icao = state_vector[0]
         self.lat = state_vector[6]
         self.lon = state_vector[5]
         self.track = state_vector[10]
@@ -280,17 +304,11 @@ def query_opensky(header: dict[str, str], url: str) -> dict[str, t.Any]:  # noqa
     if r.status_code != 200:
         raise RuntimeError(f"Bad response received from OpenSky: {r.status_code}, {r.text}")
 
+    aircraft_data = r.json()
+    if aircraft_data is None:
+        raise RuntimeError("Empty response received from OpenSky")
+
     return r.json()  # type: ignore[no-any-return]
-
-
-def build_aircraft_icons() -> tuple[displayio.Bitmap, displayio.Palette]:
-    """Load the base aircraft icons into an icon sheet."""
-    icon_sheet, palette = adafruit_imageload.load(
-        "./aircraft_icons.bmp", bitmap=displayio.Bitmap, palette=displayio.Palette
-    )
-    palette.make_transparent(0)
-
-    return icon_sheet, palette
 
 
 def map_range(value: float, in_min: float, in_max: float, out_min: float, out_max: float) -> int:
@@ -321,7 +339,11 @@ def calculate_pixel_position(
     return x, y
 
 
-def redraw_aircraft(aircraft: list[AircraftState], skip_ground: bool = True) -> None:
+def redraw_aircraft(
+    aircraft: list[AircraftState],
+    default_icon: AircraftIcon = BASE_ICON,
+    skip_ground: bool = True,
+) -> None:
     """
     Clear the currently plotted aircraft icons & redraw from the provided list of aircraft.
 
@@ -344,11 +366,11 @@ def redraw_aircraft(aircraft: list[AircraftState], skip_ground: bool = True) -> 
 
         icon_x, icon_y = calculate_pixel_position(lat=ap.lat, lon=ap.lon, grid_bounds=grid_bounds)  # type: ignore[arg-type]  # noqa: E501
 
-        # Aircraft icons are assumed to be provided in 45 degree increments
-        tile_index = int(ap.track / 45)  # type: ignore[operator]
+        # Aircraft icons are assumed to be provided in 30 degree increments
+        tile_index = int(ap.track / 30)  # type: ignore[operator]
         icon = displayio.TileGrid(
-            bitmap=aircraft_icons,
-            pixel_shader=palette,
+            bitmap=default_icon.icon_sheet,
+            pixel_shader=default_icon.palette,
             tile_width=ICON_TILE_SIZE,
             tile_height=ICON_TILE_SIZE,
             default_tile=tile_index,
@@ -372,8 +394,6 @@ PYPORTAL.get_local_time(location=LOCAL_TZ)
 grid_bounds = build_bounding_box()
 set_base_map(grid_bounds=grid_bounds, use_default=True)
 time_label = add_time_label()
-
-aircraft_icons, palette = build_aircraft_icons()
 MAIN_DISPLAY_GROUP.append(AIRCRAFT_GROUP)
 
 opensky_header, opensky_url = build_opensky_request(*grid_bounds)
@@ -390,7 +410,7 @@ while True:
         print(f"Found {len(aircraft)} aircraft")
     except RuntimeError as e:
         print("Error retrieving flight data from OpenSky", e)
-    except requests.OutOfRetries:
+    except (requests.OutOfRetries, TimeoutError):
         print("Request to OpenSky timed out")
 
     if aircraft:
@@ -401,5 +421,5 @@ while True:
         print("No aircraft to draw, skipping redraw")
 
     next_request_at = dt.datetime.now() + dt.timedelta(seconds=REFRESH_INTERVAL_SECONDS)
-    print(f"Sleeping... next refresh at {next_request_at}")
+    print(f"Sleeping... next refresh at {next_request_at} local")
     time.sleep(REFRESH_INTERVAL_SECONDS)
