@@ -30,6 +30,7 @@ class AircraftCategory:  # noqa: D101
 
 class AircraftState:  # noqa: D101
     icao: str
+    callsign: str | None
     lat: float | None
     lon: float | None
     track: float | None
@@ -41,7 +42,9 @@ class AircraftState:  # noqa: D101
     aircraft_category: int
 
     def __init__(self, state_vector: dict) -> None:
+        # See: https://openskynetwork.github.io/opensky-api/rest.html#id4 for field descriptions
         self.icao = state_vector[0]
+        self.callsign = state_vector[1]
         self.lat = state_vector[6]
         self.lon = state_vector[5]
         self.track = state_vector[10]
@@ -51,6 +54,25 @@ class AircraftState:  # noqa: D101
         self.geo_altitude_m = state_vector[13]
         self.vertical_rate_mps = state_vector[11]
         self.aircraft_category = state_vector[17]
+
+        if state_vector[1] is not None:
+            self.callsign = state_vector[1].strip()
+
+    def __str__(self) -> str:
+        if self.callsign is not None:
+            ac_id = self.callsign
+        else:
+            ac_id = self.icao
+
+        if self.is_plottable():
+            track_str = f"({self.lat:0.3f}, {self.lon:0.3f}), {int(self.track)}º"  # type: ignore[arg-type]  # noqa: E501
+        else:
+            track_str = "No track information"
+
+        if self.geo_altitude_m is not None:
+            track_str = f"{track_str} @ {int(self.geo_altitude_m)}m MSL"
+
+        return f"{ac_id}: {track_str}"
 
     def is_plottable(self) -> bool:  # noqa: D102
         if self.lat is None:

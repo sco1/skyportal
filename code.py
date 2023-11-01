@@ -3,7 +3,6 @@ from __future__ import annotations
 import time
 
 import adafruit_datetime as dt
-import adafruit_requests as requests
 import board
 import displayio
 import terminalio
@@ -12,7 +11,7 @@ from adafruit_pyportal import PyPortal
 
 from skyportal.aircraftlib import AIRCRAFT_ICONS, AircraftIcon, AircraftState, BASE_ICON
 from skyportal.maplib import build_bounding_box, calculate_pixel_position, get_base_map
-from skyportal.networklib import build_opensky_request, parse_opensky_response, query_opensky
+from skyportal.opensky import APIException, APITimeoutError, OpenSky
 
 REFRESH_INTERVAL_SECONDS = 30
 
@@ -144,27 +143,22 @@ set_base_map(grid_bounds=grid_bounds, use_default=True)
 time_label = add_time_label()
 MAIN_DISPLAY_GROUP.append(AIRCRAFT_GROUP)
 
-opensky_header, opensky_url = build_opensky_request(*grid_bounds)
+opensky_handler = OpenSky(grid_bounds=grid_bounds)
 print(f"\n{'='*40}\nInitialization complete\n{'='*40}\n")
 
 # Main loop
 while True:
-    aircraft: list[AircraftState] = []
     try:
-        print("Requesting aircraft data from OpenSky")
-        flight_data = query_opensky(header=opensky_header, url=opensky_url)
-        print("Parsing OpenSky API response")
-        aircraft, api_time = parse_opensky_response(flight_data)
-        print(f"Found {len(aircraft)} aircraft")
-    except RuntimeError as e:
-        print("Error retrieving flight data from OpenSky", e)
-    except (requests.OutOfRetries, TimeoutError):
+        opensky_handler.update()
+    except APITimeoutError:
         print("Request to OpenSky timed out")
+    except APIException as e:
+        print(e)
 
-    if aircraft:
+    if opensky_handler.can_draw():
         print("Updating aircraft locations")
-        redraw_aircraft(aircraft)
-        time_label.text = f"{api_time}Z"
+        redraw_aircraft(opensky_handler.aircraft)
+        time_label.text = f"{opensky_handler.api_time}Z"
     else:
         print("No aircraft to draw, skipping redraw")
 
