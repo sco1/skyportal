@@ -31,7 +31,7 @@ def _utc_to_local(utc_timestamp: int, utc_offset: str = "-0000") -> dt.datetime:
 
 
 # Initialization
-PYPORTAL = PyPortal()
+PYPORTAL = PyPortal()  # This also takes care of mounting the SD to /sd
 skyportal_ui = SkyPortalUI()
 
 PYPORTAL.network.connect()

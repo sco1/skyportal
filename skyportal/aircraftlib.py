@@ -120,6 +120,7 @@ class AircraftIcon:  # noqa: D101
         )
 
 
+# Current icon tiles are made using primary colors #ffff00 (yellow) and #25FF00 (green, background)
 ICON_TILE_SIZE = 16
 BASE_ICON = AircraftIcon.from_file("./airplane_icons.bmp")
 AIRCRAFT_ICONS = {

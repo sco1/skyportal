@@ -1,6 +1,10 @@
+import os
+
+import adafruit_datetime as dt
 import board
 import displayio
 import terminalio
+from adafruit_bitmapsaver import save_pixels
 from adafruit_display_text import label
 
 from skyportal.aircraftlib import (
@@ -18,6 +22,61 @@ SPLASH = "./splash.bmp"
 DEFAULT_BASE_MAP = "./default_map.bmp"
 
 
+class ScreenshotHandler:
+    """Handle screenshot saving rotation, saving up to a maximum of `n_screenshots` per location."""
+
+    n_screenshots: int
+    _dest: str
+    _log_str: str
+
+    def __init__(self, n_screenshots: int = 3, use_sd: bool = True):
+        self.n_screenshots = n_screenshots
+
+        if use_sd:
+            self._dest = "/sd/"
+            self._log_str = "Saving screenshot to SD card"
+        else:
+            self._dest = "./"
+            self._log_str = "Saving screenshot to internal storage"
+
+        print(f"Screenshot handler initialized, saving to '{self._dest}'")
+
+    def _rotate_images(self) -> None:
+        """Walk the current screenshot directory & ensure there are `n_screenshots-1` saved."""
+        found_screenshots = []
+        for name in os.listdir(self._dest):
+            if name.startswith("screenshot_"):
+                found_screenshots.append(name)
+
+        found_screenshots.sort()
+        print(f"Found {len(found_screenshots)} screenshots in '{self._dest}'")
+
+        to_delete = []
+        if len(found_screenshots) > (self.n_screenshots - 1):
+            n_delete = len(found_screenshots) - self.n_screenshots + 1
+            to_delete.extend(found_screenshots[:n_delete])
+
+        print(f"Will delete {len(to_delete)} files")
+        for name in to_delete:
+            os.unlink(f"{self._dest}{name}")
+
+    def take_screenshot(self) -> None:
+        """
+        Capture a screenshot of the current screen display & store to the SD.
+
+        If `use_sd` is `False`, image is instead stored to onboard storage for quicker access. This
+        should uaully only be used for debugging.
+
+        NOTE: Screenshots are disambiguated using the device's local time, any existing file of the
+        same name will be overwritten.
+        """
+        self._rotate_images()
+
+        filename = f"screenshot_{dt.datetime.now().isoformat()}.bmp".replace(":", "_")
+        print(self._log_str)
+        save_pixels(f"{self._dest}{filename}")
+
+
 class SkyPortalUI:  # noqa: D101
     main_display_group: displayio.Group
     aircraft_display_group: displayio.Group
@@ -27,6 +86,8 @@ class SkyPortalUI:  # noqa: D101
 
     grid_bounds: tuple[float, float, float, float]
 
+    screenshot_handler: ScreenshotHandler
+
     def __init__(self) -> None:
         # Set up main display element
         self.main_display_group = displayio.Group()
@@ -35,6 +96,7 @@ class SkyPortalUI:  # noqa: D101
 
         SKYPORTAL_DISPLAY.root_group = self.main_display_group
         self.build_splash()
+        self.screenshot_handler = ScreenshotHandler()
 
     def post_connect_init(self, grid_bounds: tuple[float, float, float, float]) -> None:
         """Execute initialization task(s)y that are dependent on an internet connection."""
