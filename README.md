@@ -49,3 +49,14 @@ secrets = {
     "opensky_password": "YOUR_OPENSKY_PASSWORD"
 }
 ```
+
+### Constants
+A collection of functionality-related constants is specified in `constants.py`, which can be adjusted to suit your needs:
+
+| Variable Name              | Description                                   | Default  |
+|----------------------------|-----------------------------------------------|----------|
+| `MAP_CENTER_LAT`           | Map center latitude, decimal degrees          | `42.41`  |
+| `MAP_CENTER_LON`           | Map center longitude, deimal degrees          | `-71.17` |
+| `GRID_WIDTH_MI`            | Map grid width, miles                         | `15`     |
+| `SKIP_GROUND`              | Skip drawing aircraft on the ground           | `True`   |
+| `GEO_ALTITUDE_THRESHOLD_M` | Skip drawing aircraft below this GPS altitude | `20`     |

@@ -7,6 +7,7 @@ import terminalio
 from adafruit_bitmapsaver import save_pixels
 from adafruit_display_text import label
 
+from constants import GEO_ALTITUDE_THRESHOLD_M, SKIP_GROUND
 from skyportal.aircraftlib import (
     AIRCRAFT_ICONS,
     AircraftIcon,
@@ -170,7 +171,8 @@ class SkyPortalUI:  # noqa: D101
         aircraft: list[AircraftState],
         default_icon: AircraftIcon = BASE_ICON,
         custom_icons: dict[int, AircraftIcon] = AIRCRAFT_ICONS,
-        skip_ground: bool = True,
+        skip_ground: bool = SKIP_GROUND,
+        geo_altitude_threshold_m: float = GEO_ALTITUDE_THRESHOLD_M,
     ) -> None:
         """
         Clear the currently plotted aircraft icons & redraw from the provided list of aircraft.
@@ -189,6 +191,10 @@ class SkyPortalUI:  # noqa: D101
                 continue
 
             if skip_ground and ap.on_ground:
+                n_ground += 1
+                continue
+
+            if ap.geo_altitude_m is None or ap.geo_altitude_m < geo_altitude_threshold_m:
                 n_ground += 1
                 continue
 
