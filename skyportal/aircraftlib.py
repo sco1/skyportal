@@ -120,6 +120,7 @@ class AircraftIcon:  # noqa: D101
         )
 
 
+ICON_TILE_SIZE = 16
 BASE_ICON = AircraftIcon.from_file("./airplane_icons.bmp")
 AIRCRAFT_ICONS = {
     AircraftCategory.ROTORCRAFT: AircraftIcon.from_file("./heli_icons.bmp"),

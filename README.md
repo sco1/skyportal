@@ -32,12 +32,14 @@ The following secrets are required for functionality:
 
 ```py
 secrets = {
+    # Your local timezone, see: http://worldtimeapi.org/timezones
+    "timezone": "America/New_York",
     # WIFI information
     "ssid": "YOUR_SSID",
     "password": "YOUR_WIFI_PASSWORD",
     # Geoapify, used to generate static mapping
     "geoapify_key": "YOUR_GEOAPIFY_API_KEY",
-    # Adafruit IO, used for transient image hosting
+    # Adafruit IO, used for transient image hosting & local time lookup
     "aio_username" : "YOUR_AIO_USERNAME",
     "aio_key" : "YOUR_AIO_KEY",
     # Open Sky Network credentials, for getting flight information

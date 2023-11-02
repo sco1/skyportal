@@ -4,6 +4,8 @@
 # keep it a secret.
 
 secrets = {
+    # Your local timezone, see: http://worldtimeapi.org/timezones
+    "timezone": "America/New_York",
     # WIFI information
     "ssid": "YOUR_SSID",
     "password": "YOUR_WIFI_PASSWORD",

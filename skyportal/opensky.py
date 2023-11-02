@@ -1,4 +1,3 @@
-import adafruit_datetime as dt
 import adafruit_requests as requests
 from circuitpython_base64 import b64encode
 
@@ -50,13 +49,13 @@ def _build_opensky_request(
     return opensky_header, opensky_url
 
 
-def _parse_opensky_response(opensky_json: dict) -> tuple[list[AircraftState], str]:
+def _parse_opensky_response(opensky_json: dict) -> tuple[list[AircraftState], int]:
     """
     Parse the OpenSky API response into a list of aircraft states, along with the UTC timestamp.
 
     See: https://openskynetwork.github.io/opensky-api/rest.html#id4 for state vector information.
     """
-    api_time = str(dt.datetime.fromtimestamp(opensky_json["time"]))
+    api_time = opensky_json["time"]
     return [AircraftState(state_vector) for state_vector in opensky_json["states"]], api_time
 
 
@@ -77,14 +76,21 @@ class OpenSky:
 
     _header: dict[str, str]
     _url: str
+    refresh_interval: int  # Seconds
 
     aircraft: list[AircraftState]
-    api_time: str
+    api_time: int
 
-    def __init__(self, grid_bounds: tuple[float, float, float, float]) -> None:
+    def __init__(
+        self,
+        grid_bounds: tuple[float, float, float, float],
+        refresh_interval: int = 30,
+    ) -> None:
         self._header, self._url = _build_opensky_request(*grid_bounds)
+        self.refresh_interval = refresh_interval
+
         self.aircraft = []
-        self.api_time = ""
+        self.api_time = -1
 
     def can_draw(self) -> bool:  # noqa: D102
         return bool(len(self.aircraft))
