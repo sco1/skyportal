@@ -133,15 +133,15 @@ def get_base_map(grid_bounds: tuple[float, float, float, float]) -> displayio.On
         if r.status_code != 200:
             raise RuntimeError(f"Bad response received from AdaIO: {r.status_code}, {r.text}")
 
-        with open("./generated_map.bmp", "wb") as f:
+        with open("./assets/generated_map.bmp", "wb") as f:
             for chunk in r.iter_content(chunk_size=4096):
                 f.write(chunk)
 
-        map_img = displayio.OnDiskBitmap("./generated_map.bmp")
+        map_img = displayio.OnDiskBitmap("./assets/generated_map.bmp")
         print("Geoapify map tile successfully generated")
     except Exception as e:
         print("Failed to download map:", e)
         print("Falling back to default tile")
-        map_img = displayio.OnDiskBitmap("./default_map.bmp")
+        map_img = displayio.OnDiskBitmap("./assets/default_map.bmp")
 
     return map_img

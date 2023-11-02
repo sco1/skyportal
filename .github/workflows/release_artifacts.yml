@@ -1,0 +1,55 @@
+name: Build Release Artifacts
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  artifacts:
+    name: Package & upload release artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Compile skyportal lib
+      run: |
+        python -m pip install mpy-cross
+        python ./compile.py
+
+    - name: Build base bundle
+      run: |
+        tar -cvf bundle_base.tar \
+          ./assets/*             \
+          ./lib/*                \
+          ./boot.py              \
+          ./code.py              \
+          ./constants.py         \
+          ./pyportal_startup.bmp \
+          ./pyportal_startup.wav \
+          ./secrets.py
+
+    - name: Create non-compiled bundle
+      run: |
+        cp bundle_base.tar skyportal_bundle.tar
+        tar -rvf skyportal_bundle.tar ./skyportal/*
+        gzip skyportal_bundle.tar
+
+    - name: Create compiled bundle
+      run: |
+        cp bundle_base.tar skyportal_bundle_compiled.tar
+        tar -rvf skyportal_bundle_compiled.tar -C ./dist/ .
+        gzip skyportal_bundle_compiled.tar
+
+    - name: Upload artifacts
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run:
+        gh release upload ${{ github.event.release.tag_name }} skyportal_bundle.tar.gz skyportal_bundle_compiled.tar.gz

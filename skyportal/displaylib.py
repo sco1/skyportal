@@ -18,8 +18,8 @@ from skyportal.maplib import calculate_pixel_position, get_base_map
 
 SKYPORTAL_DISPLAY = board.DISPLAY
 
-SPLASH = "./splash.bmp"
-DEFAULT_BASE_MAP = "./default_map.bmp"
+SPLASH = "./assets/splash.bmp"
+DEFAULT_BASE_MAP = "./assets/default_map.bmp"
 
 
 class ScreenshotHandler:
