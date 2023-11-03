@@ -5,6 +5,8 @@ Heavily inspired by Bob Hammell"s PyPortal Flight Tracker ([GH](https://github.c
 
 Thank you to [markleoart](https://www.fiverr.com/markleoart) for creating the aircraft icon sprite sheets!
 
+![screenshot](./doc/screenie.bmp "SkyPortal in action")
+
 ## Getting Started
 Users are assumed have read through [Adafruit's PyPortal learning guide](https://learn.adafruit.com/adafruit-pyportal). CircuitPython v8.2 is currently in use for this repository, no other versions are evaluated.
 
