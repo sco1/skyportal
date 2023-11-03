@@ -1,10 +1,16 @@
+import platform
+import subprocess
 import time
 from pathlib import Path
 
-import mpy_cross
-
 SOURCE_DIR = Path("./skyportal")
 DEST_DIR = Path("./dist/lib/skyportal")
+
+COMPILERS = {
+    "Windows": Path("./mpy-cross/mpy-cross.static-x64-windows-8.0.5.exe"),
+    "Linux": Path("./mpy-cross/mpy-cross.static-amd64-linux-8.0.5"),
+    "Darwin": Path("./mpy-cross/mpy-cross-macos-11-8.0.5-arm64"),
+}
 
 
 if __name__ == "__main__":
@@ -13,7 +19,7 @@ if __name__ == "__main__":
     to_compile = list(SOURCE_DIR.glob("*.py"))
     print(f"Found {len(to_compile)} *.py files to compile")
     for filepath in to_compile:
-        mpy_cross.run(filepath)
+        subprocess.run([COMPILERS[platform.system()], filepath])
 
     time.sleep(1)  # Lazy wait for subprocesses to finish
 

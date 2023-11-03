@@ -21,7 +21,6 @@ jobs:
 
     - name: Compile skyportal lib
       run: |
-        python -m pip install mpy-cross
         python ./compile.py
 
     - name: Build base bundle

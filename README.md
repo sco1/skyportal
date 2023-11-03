@@ -8,6 +8,8 @@ Thank you to [markleoart](https://www.fiverr.com/markleoart) for creating the ai
 ## Getting Started
 Users are assumed have read through [Adafruit's PyPortal learning guide](https://learn.adafruit.com/adafruit-pyportal). CircuitPython v8.2 is currently in use for this repository, no other versions are evaluated.
 
+The CircuitPython libraries in `lib` are sourced from the Official and Community bundles, which can be found on the [CircuitPython libraries page](https://learn.adafruit.com/adafruit-pyportal)
+
 **WARNING:** In order to generate the background map tile, this project's `boot.py` modifies the boot process to allow the filesystem to be used as a writeable cache. In the unlikely event that things go horribly awry you may lose the existing contents of your device, so be sure to back them up before working with this project.
 
 ### Installation
@@ -27,9 +29,10 @@ secrets.py
 ```
 
 #### From GH Release
-The Skyportal [Releases page](https://github.com/sco1/skyportal/releases) contains bundled `*.tar.gz` archives, built in CI, that can be downloaded and extracted directly onto the device. Bundles come in two flavors: one pure-python implementation and one compiled `*.mpy` version, which has a decreased overall file size.
+The Skyportal [Releases page](https://github.com/sco1/skyportal/releases) contains bundled `*.tar.gz` archives, built in CI, that can be downloaded and extracted directly onto the device. Bundles come in two flavors: one pure-python implementation and a compiled version, where the `skyportal` library has been [compiled to `*.mpy`](https://learn.adafruit.com/welcome-to-circuitpython/library-file-types-and-frozen-libraries#dot-mpy-library-files-3117643) and added to `lib/`.
 
-### Secrets
+### Configuration
+#### Secrets
 The following secrets are required for functionality:
 
 ```py
@@ -50,13 +53,13 @@ secrets = {
 }
 ```
 
-### Constants
+#### Constants
 A collection of functionality-related constants is specified in `constants.py`, which can be adjusted to suit your needs:
 
-| Variable Name              | Description                                   | Default  |
-|----------------------------|-----------------------------------------------|----------|
-| `MAP_CENTER_LAT`           | Map center latitude, decimal degrees          | `42.41`  |
-| `MAP_CENTER_LON`           | Map center longitude, deimal degrees          | `-71.17` |
-| `GRID_WIDTH_MI`            | Map grid width, miles                         | `15`     |
-| `SKIP_GROUND`              | Skip drawing aircraft on the ground           | `True`   |
-| `GEO_ALTITUDE_THRESHOLD_M` | Skip drawing aircraft below this GPS altitude | `20`     |
+| Variable Name              | Description                                           | Default  |
+|----------------------------|-------------------------------------------------------|----------|
+| `MAP_CENTER_LAT`           | Map center latitude, decimal degrees                  | `42.41`  |
+| `MAP_CENTER_LON`           | Map center longitude, deimal degrees                  | `-71.17` |
+| `GRID_WIDTH_MI`            | Map grid width, miles                                 | `15`     |
+| `SKIP_GROUND`              | Skip drawing aircraft on the ground                   | `True`   |
+| `GEO_ALTITUDE_THRESHOLD_M` | Skip drawing aircraft below this GPS altitude, meters | `20`     |

@@ -250,22 +250,6 @@ files = [
 ]
 
 [[package]]
-name = "mpy-cross"
-version = "1.20.0"
-description = "micropython mpy-cross distribution"
-optional = false
-python-versions = "*"
-files = [
-    {file = "mpy_cross-1.20.0-py2.py3-none-macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_10_intel.macosx_10_10_x86_64.whl", hash = "sha256:8161edb01c0b7eda6a70c85301615f076fae329e038cc7d5c42865a13535a2a8"},
-    {file = "mpy_cross-1.20.0-py2.py3-none-manylinux1_i686.whl", hash = "sha256:f34f6b29486a45ded52e9525692a0db925d4d61e50c8620e5f979dd21e8fcb7e"},
-    {file = "mpy_cross-1.20.0-py2.py3-none-manylinux1_x86_64.whl", hash = "sha256:cd5dc8c00e58c4fde3330c3bb3ee66d1e12749a983d14ab58784002c5e52ec90"},
-    {file = "mpy_cross-1.20.0-py2.py3-none-manylinux2014_aarch64.whl", hash = "sha256:09f9d28b103468aad3d243e7767ad216e5a169f63acbd3a3dd21eac57ebb703a"},
-    {file = "mpy_cross-1.20.0-py2.py3-none-manylinux2014_armv7l.whl", hash = "sha256:04f0ad333a168cbe2f6a9753f2d74bcf89d6ced25e14cef2585fd154d7975e09"},
-    {file = "mpy_cross-1.20.0-py2.py3-none-win32.whl", hash = "sha256:08fc7808abecc4586a03d3a9e519c9f7f257aa865b77aad40e5948a52c81b14b"},
-    {file = "mpy_cross-1.20.0-py2.py3-none-win_amd64.whl", hash = "sha256:074fb79da38ca699440cb9001ffbe2e84dab33256349e589c457ac5ea7fe5ada"},
-]
-
-[[package]]
 name = "mypy"
 version = "1.6.1"
 description = "Optional static typing for Python"
@@ -553,4 +537,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "6137e7da0868fc6f6c58b2b0f53329f1b5f7f066bad2d24e1da44748ae2378e1"
+content-hash = "6ff3ed83f2d2b708ca0101af12ddea5aa86f2480b3256fa2883c4a01aa5a2fcb"
