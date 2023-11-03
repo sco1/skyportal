@@ -1,18 +1,13 @@
 import math
 from collections import OrderedDict
+from secrets import secrets
 
 import adafruit_requests as requests
 import board
 import displayio
 
-from constants import GRID_WIDTH_MI, MAP_CENTER_LAT, MAP_CENTER_LON
 from skyportal.networklib import build_url, urlencode
-
-try:
-    from secrets import secrets
-except ImportError as e:
-    raise Exception("Could not locate secrets file.") from e
-
+from skyportal_config import GRID_WIDTH_MI, MAP_CENTER_LAT, MAP_CENTER_LON
 
 GEOAPIFY_API_URL_BASE = "https://maps.geoapify.com/v1/staticmap"
 MAP_STYLE = "klokantech-basic"

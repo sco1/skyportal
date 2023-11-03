@@ -1,14 +1,11 @@
+from secrets import secrets
+
 import adafruit_datetime as dt
 import adafruit_requests as requests
 from circuitpython_base64 import b64encode
 
 from skyportal.aircraftlib import AircraftState
 from skyportal.networklib import build_url
-
-try:
-    from secrets import secrets
-except ImportError as e:
-    raise Exception("Could not locate secrets file.") from e
 
 # CircuitPython doesn't have the typing module, so throw this away at runtime
 try:

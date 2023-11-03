@@ -30,10 +30,10 @@ jobs:
           ./lib/*                \
           ./boot.py              \
           ./code.py              \
-          ./constants.py         \
           ./pyportal_startup.bmp \
           ./pyportal_startup.wav \
-          ./secrets.py
+          ./secrets.py           \
+          ./skyportal_config.py
 
     - name: Create non-compiled bundle
       run: |

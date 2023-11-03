@@ -8,7 +8,6 @@ import terminalio
 from adafruit_bitmapsaver import save_pixels
 from adafruit_display_text import label
 
-from constants import GEO_ALTITUDE_THRESHOLD_M, SKIP_GROUND
 from skyportal.aircraftlib import (
     AIRCRAFT_ICONS,
     AircraftIcon,
@@ -17,11 +16,21 @@ from skyportal.aircraftlib import (
     ICON_TILE_SIZE,
 )
 from skyportal.maplib import calculate_pixel_position, get_base_map
+from skyportal_config import GEO_ALTITUDE_THRESHOLD_M, KEEP_N_SCREENSHOTS, SKIP_GROUND
+
+# CircuitPython doesn't have the typing module, so throw this away at runtime
+try:
+    import typing as t
+except ImportError:
+    pass
+
 
 SKYPORTAL_DISPLAY = board.DISPLAY
 
 SPLASH = "./assets/splash.bmp"
 DEFAULT_BASE_MAP = "./assets/default_map.bmp"
+SCREENSHOT_ENABLED = "./assets/camera_green.bmp"
+SCREENSHOT_DISABLED = "./assets/camera_red.bmp"
 
 
 class ScreenshotHandler:
@@ -31,7 +40,7 @@ class ScreenshotHandler:
     _dest: str
     _log_str: str
 
-    def __init__(self, n_screenshots: int = 3, use_sd: bool = True):
+    def __init__(self, n_screenshots: int = KEEP_N_SCREENSHOTS, use_sd: bool = True):
         self.n_screenshots = n_screenshots
 
         if use_sd:
@@ -51,14 +60,12 @@ class ScreenshotHandler:
                 found_screenshots.append(name)
 
         found_screenshots.sort()
-        print(f"Found {len(found_screenshots)} screenshots in '{self._dest}'")
 
         to_delete = []
         if len(found_screenshots) > (self.n_screenshots - 1):
             n_delete = len(found_screenshots) - self.n_screenshots + 1
             to_delete.extend(found_screenshots[:n_delete])
 
-        print(f"Will delete {len(to_delete)} files")
         for name in to_delete:
             os.unlink(f"{self._dest}{name}")
 
@@ -99,31 +106,75 @@ class TouchscreenHandler:  # noqa: D101
         return self._touchscreen.touch_point  # type: ignore[no-any-return]
 
 
+class ImageButton:
+    """
+    Helper object for initializing a BMP image as a touchscreen button.
+
+    A callback function can be provided to dispatch actions when the button is pressed. Callback
+    functions are assumed to take no arguments, and any returns are ignored.
+    """
+
+    tilegrid: displayio.TileGrid
+
+    _x_bounds: range
+    _y_bounds: range
+
+    callback: t.Optional[t.Callable]
+
+    def __init__(
+        self, img_filepath: str, x: int = 0, y: int = 0, callback: t.Optional[t.Callable] = None
+    ) -> None:
+        img = displayio.OnDiskBitmap(img_filepath)
+
+        self._x_bounds = range(x, x + img.width + 1)
+        self._y_bounds = range(y, y + img.height + 1)
+
+        self.tilegrid = displayio.TileGrid(img, pixel_shader=img.pixel_shader, x=x, y=y)
+
+        self.callback = callback
+
+    def _contains(self, touch_coord: tuple[int, int, int]) -> bool:
+        query_x, query_y, _ = touch_coord
+
+        return (query_x in self._x_bounds) and (query_y in self._y_bounds)
+
+    def check_fire(self, touch_coord: tuple[int, int, int]) -> None:
+        """Check if the touch input is within the button's bounds & fire the callback if it is."""
+        if self.callback is not None and self._contains(touch_coord):
+            self.callback()
+
+    def show(self, state: bool = True) -> None:  # noqa: D102
+        self.tilegrid.hidden = state
+
+
 class SkyPortalUI:  # noqa: D101
     main_display_group: displayio.Group
     aircraft_display_group: displayio.Group
     time_label_group: displayio.Group
-    touch_label_group: displayio.Group
+    screenshot_button_group: displayio.Group
 
     time_label: label.Label
-    touch_label: label.Label
 
-    grid_bounds: tuple[float, float, float, float]
+    screenshot_buttons: dict[bool, ImageButton]
 
     screenshot_handler: ScreenshotHandler
     touchscreen_handler: TouchscreenHandler
 
-    def __init__(self) -> None:
+    grid_bounds: tuple[float, float, float, float]
+
+    def __init__(self, enable_screenshot: bool = False) -> None:
         # Set up main display element
         self.main_display_group = displayio.Group()
         self.aircraft_display_group = displayio.Group()
         self.time_label_group = displayio.Group()
-        self.touch_label_group = displayio.Group()
+        self.screenshot_button_group = displayio.Group()
 
         SKYPORTAL_DISPLAY.root_group = self.main_display_group
         self.build_splash()
         self.touchscreen_handler = TouchscreenHandler()
         self.screenshot_handler = ScreenshotHandler()
+
+        self._enable_screenshot = enable_screenshot
 
     def post_connect_init(self, grid_bounds: tuple[float, float, float, float]) -> None:
         """Execute initialization task(s)y that are dependent on an internet connection."""
@@ -131,9 +182,12 @@ class SkyPortalUI:  # noqa: D101
         self.set_base_map(grid_bounds=self.grid_bounds, use_default=True)
 
         # Not internet dependent, but dependent on the base map
-        self.main_display_group.append(self.aircraft_display_group) # Put aircraft below labels
+        # Put aircraft below all other UI elements
+        self.main_display_group.append(self.aircraft_display_group)
         self.add_time_label()
-        self.add_touch_label()
+
+        if self._enable_screenshot:
+            self.add_screenshot_buttons()
 
     def build_splash(self) -> None:  # noqa: D102
         splash_display = displayio.Group()
@@ -175,11 +229,10 @@ class SkyPortalUI:  # noqa: D101
         self.main_display_group.pop()  # Remove the splash screen
         self.main_display_group.append(map_group)
 
-    def add_time_label(self) -> label.Label:
-        """Add a label for the last update query time."""
+    def add_time_label(self) -> None:  # noqa: D102
         self.time_label = label.Label(
             anchor_point=(0, 0),
-            anchored_position=(1, 0),
+            anchored_position=(2, 0),
             font=terminalio.FONT,
             color=0x000000,
             background_color=0xFFFFFF,
@@ -193,24 +246,20 @@ class SkyPortalUI:  # noqa: D101
         self.time_label_group.append(self.time_label)
         self.main_display_group.append(self.time_label_group)
 
-    def add_touch_label(self) -> label.Label:
-        """Add a debug label for touchscreen status."""
-        # Label for debugging, replace with an icon later
-        self.touch_label = label.Label(
-            anchor_point=(0, 1),
-            anchored_position=(1, SKYPORTAL_DISPLAY.height),
-            font=terminalio.FONT,
-            color=0x000000,
-            background_color=0xFFFFFF,
-            padding_top=2,
-            padding_bottom=2,
-            padding_left=2,
-            padding_right=2,
-            text="Touchscreen Enabled",
+    def add_screenshot_buttons(self) -> None:  # noqa: D102
+        screenshot_enabled = ImageButton(
+            SCREENSHOT_ENABLED,
+            y=(SKYPORTAL_DISPLAY.height - 40),
+            callback=self.screenshot_handler.take_screenshot,
         )
+        screenshot_disabled = ImageButton(SCREENSHOT_DISABLED, y=(SKYPORTAL_DISPLAY.height - 40))
+        screenshot_disabled.show(False)
 
-        self.touch_label_group.append(self.touch_label)
-        self.main_display_group.append(self.touch_label_group)
+        self.screenshot_buttons = {True: screenshot_enabled, False: screenshot_disabled}
+
+        self.screenshot_button_group.append(screenshot_disabled.tilegrid)
+        self.screenshot_button_group.append(screenshot_enabled.tilegrid)
+        self.main_display_group.append(self.screenshot_button_group)
 
     def draw_aircraft(
         self,
@@ -270,7 +319,14 @@ class SkyPortalUI:  # noqa: D101
         )
 
     def touch_on(self) -> None:  # noqa: D102
-        self.touch_label.text = "Touchscreen Enabled"
+        self.screenshot_buttons[True].tilegrid.hidden = False
+        self.screenshot_buttons[False].tilegrid.hidden = True
 
     def touch_off(self) -> None:  # noqa: D102
-        self.touch_label.text = "Touchscreen Disabled"
+        self.screenshot_buttons[True].tilegrid.hidden = True
+        self.screenshot_buttons[False].tilegrid.hidden = False
+
+    def process_touch(self, touch_coord: tuple[int, int, int]) -> None:
+        """Process the provided touch input coordinate & fire the first action required."""
+        if self._enable_screenshot:
+            self.screenshot_buttons[True].check_fire(touch_coord)

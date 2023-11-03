@@ -24,10 +24,10 @@ lib/
 skyportal/
 boot.py
 code.py
-constants.py
 pyportal_startup.bmp
 pyportal_startup.wav
 secrets.py
+skyportal_config.py
 ```
 
 #### From GH Release
@@ -55,13 +55,21 @@ secrets = {
 }
 ```
 
-#### Constants
-A collection of functionality-related constants is specified in `constants.py`, which can be adjusted to suit your needs:
+#### Skyportal Configuration
+A collection of functionality-related constants is specified in `skyportal_config.py`, which can be adjusted to suit your needs:
 
 | Variable Name              | Description                                           | Default  |
 |----------------------------|-------------------------------------------------------|----------|
+| `SHOW_SCREENSHOT_BUTTON`   | Provide a UI button for taking screenshots            | `True`   |
+| `KEEP_N_SCREENSHOTS`       | Keep the `n` most recent screenshots in SD storage    | `3`      |
 | `MAP_CENTER_LAT`           | Map center latitude, decimal degrees                  | `42.41`  |
 | `MAP_CENTER_LON`           | Map center longitude, deimal degrees                  | `-71.17` |
 | `GRID_WIDTH_MI`            | Map grid width, miles                                 | `15`     |
 | `SKIP_GROUND`              | Skip drawing aircraft on the ground                   | `True`   |
 | `GEO_ALTITUDE_THRESHOLD_M` | Skip drawing aircraft below this GPS altitude, meters | `20`     |
+
+## Touchscreen Functionality
+**NOTE:** Due to the lack of an available asynchronous requests library for CircuitPython, the call to the OpenSky API is blocking and will block touchscreen functionality until a response is obtained. An attempt will be made to reflect the current blocking status in all UI elements, indicating to the user that their touch inputs can't be processed.
+
+### Screenshot
+If enabled in the SkyPortal configuration file, a screenshot button is created in the lower left, allowing the user to take a screenshot to SD card storage. The device utilizes a rolling storage, keeping the `n` most recent screenshots and discarding the oldest screenshot if above this threshold.

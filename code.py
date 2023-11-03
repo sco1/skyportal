@@ -14,6 +14,11 @@ try:
 except ImportError as e:
     raise Exception("Could not locate secrets file.") from e
 
+try:
+    import skyportal_config
+except ImportError as e:
+    raise Exception("Could not locate configuration file.") from e
+
 
 def _utc_to_local(utc_timestamp: int, utc_offset: str = "-0000") -> dt.datetime:
     """
@@ -31,7 +36,7 @@ def _utc_to_local(utc_timestamp: int, utc_offset: str = "-0000") -> dt.datetime:
 
 # Device Initialization
 PYPORTAL = PyPortal()  # This also takes care of mounting the SD to /sd
-skyportal_ui = SkyPortalUI()
+skyportal_ui = SkyPortalUI(enable_screenshot=skyportal_config.SHOW_SCREENSHOT_BUTTON)
 
 PYPORTAL.network.connect()
 print("Wifi connected")
@@ -75,4 +80,4 @@ while True:
 
     p = skyportal_ui.touchscreen_handler.touch_point
     if p:
-        print("Touch!", p)
+        skyportal_ui.process_touch(p)
