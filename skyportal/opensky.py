@@ -1,3 +1,4 @@
+import adafruit_datetime as dt
 import adafruit_requests as requests
 from circuitpython_base64 import b64encode
 
@@ -76,7 +77,7 @@ class OpenSky:
 
     _header: dict[str, str]
     _url: str
-    refresh_interval: int  # Seconds
+    refresh_interval: dt.timedelta
 
     aircraft: list[AircraftState]
     api_time: int
@@ -87,7 +88,7 @@ class OpenSky:
         refresh_interval: int = 30,
     ) -> None:
         self._header, self._url = _build_opensky_request(*grid_bounds)
-        self.refresh_interval = refresh_interval
+        self.refresh_interval = dt.timedelta(seconds=refresh_interval)
 
         self.aircraft = []
         self.api_time = -1

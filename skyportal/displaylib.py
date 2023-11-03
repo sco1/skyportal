@@ -1,6 +1,7 @@
 import os
 
 import adafruit_datetime as dt
+import adafruit_touchscreen
 import board
 import displayio
 import terminalio
@@ -78,25 +79,50 @@ class ScreenshotHandler:
         save_pixels(f"{self._dest}{filename}")
 
 
+class TouchscreenHandler:  # noqa: D101
+    _touchscreen: adafruit_touchscreen.Touchscreen
+
+    def __init__(self) -> None:
+        self._touchscreen = adafruit_touchscreen.Touchscreen(
+            x1_pin=board.TOUCH_XL,
+            x2_pin=board.TOUCH_XR,
+            y1_pin=board.TOUCH_YD,
+            y2_pin=board.TOUCH_YU,
+            calibration=((5200, 59000), (5800, 57000)),
+            size=(SKYPORTAL_DISPLAY.width, SKYPORTAL_DISPLAY.height),
+        )
+
+        print("Touchscreen initialized")
+
+    @property
+    def touch_point(self) -> tuple[int, int, int] | None:  # noqa: D102
+        return self._touchscreen.touch_point  # type: ignore[no-any-return]
+
+
 class SkyPortalUI:  # noqa: D101
     main_display_group: displayio.Group
     aircraft_display_group: displayio.Group
     time_label_group: displayio.Group
+    touch_label_group: displayio.Group
 
     time_label: label.Label
+    touch_label: label.Label
 
     grid_bounds: tuple[float, float, float, float]
 
     screenshot_handler: ScreenshotHandler
+    touchscreen_handler: TouchscreenHandler
 
     def __init__(self) -> None:
         # Set up main display element
         self.main_display_group = displayio.Group()
         self.aircraft_display_group = displayio.Group()
         self.time_label_group = displayio.Group()
+        self.touch_label_group = displayio.Group()
 
         SKYPORTAL_DISPLAY.root_group = self.main_display_group
         self.build_splash()
+        self.touchscreen_handler = TouchscreenHandler()
         self.screenshot_handler = ScreenshotHandler()
 
     def post_connect_init(self, grid_bounds: tuple[float, float, float, float]) -> None:
@@ -105,8 +131,9 @@ class SkyPortalUI:  # noqa: D101
         self.set_base_map(grid_bounds=self.grid_bounds, use_default=True)
 
         # Not internet dependent, but dependent on the base map
+        self.main_display_group.append(self.aircraft_display_group) # Put aircraft below labels
         self.add_time_label()
-        self.main_display_group.append(self.aircraft_display_group)
+        self.add_touch_label()
 
     def build_splash(self) -> None:  # noqa: D102
         splash_display = displayio.Group()
@@ -151,11 +178,11 @@ class SkyPortalUI:  # noqa: D101
     def add_time_label(self) -> label.Label:
         """Add a label for the last update query time."""
         self.time_label = label.Label(
+            anchor_point=(0, 0),
+            anchored_position=(1, 0),
             font=terminalio.FONT,
             color=0x000000,
             background_color=0xFFFFFF,
-            anchor_point=(0, 0),
-            anchored_position=(5, 5),
             padding_top=2,
             padding_bottom=2,
             padding_left=2,
@@ -165,6 +192,25 @@ class SkyPortalUI:  # noqa: D101
 
         self.time_label_group.append(self.time_label)
         self.main_display_group.append(self.time_label_group)
+
+    def add_touch_label(self) -> label.Label:
+        """Add a debug label for touchscreen status."""
+        # Label for debugging, replace with an icon later
+        self.touch_label = label.Label(
+            anchor_point=(0, 1),
+            anchored_position=(1, SKYPORTAL_DISPLAY.height),
+            font=terminalio.FONT,
+            color=0x000000,
+            background_color=0xFFFFFF,
+            padding_top=2,
+            padding_bottom=2,
+            padding_left=2,
+            padding_right=2,
+            text="Touchscreen Enabled",
+        )
+
+        self.touch_label_group.append(self.touch_label)
+        self.main_display_group.append(self.touch_label_group)
 
     def draw_aircraft(
         self,
@@ -222,3 +268,9 @@ class SkyPortalUI:  # noqa: D101
         print(
             f"Skipped drawing {n_skipped} aircraft ({n_unplottable} missing data, {n_ground} on ground)"  # noqa: E501
         )
+
+    def touch_on(self) -> None:  # noqa: D102
+        self.touch_label.text = "Touchscreen Enabled"
+
+    def touch_off(self) -> None:  # noqa: D102
+        self.touch_label.text = "Touchscreen Disabled"
