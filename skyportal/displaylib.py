@@ -1,4 +1,5 @@
 import os
+from collections import namedtuple
 
 import adafruit_datetime as dt
 import adafruit_touchscreen
@@ -6,7 +7,9 @@ import board
 import displayio
 import terminalio
 from adafruit_bitmapsaver import save_pixels
+from adafruit_display_shapes.roundrect import RoundRect
 from adafruit_display_text import label
+from circuitpython_functools import partial
 
 from skyportal.aircraftlib import (
     AIRCRAFT_ICONS,
@@ -147,6 +150,132 @@ class ImageButton:
         self.tilegrid.hidden = state
 
 
+class AircraftInfoBox:
+    """
+    Popup window for displaying the selected aircraft's location.
+
+    Currently displayed are:
+        * Callsign/ICAO
+        * Latitude/Longitude, decimal degrees
+        * Altitude, ft MSL
+        * Heading, degrees true
+        * Groundspeed, knots
+    """
+
+    aircraft_info_group: displayio.Group
+    data_labels: dict[str, label.Label]
+
+    _width: int = 200
+    _height: int = 80
+    _rad: int = 10
+
+    _fill = 0x133D80
+    _text_fill = 0x133D80
+    _text_color = 0xFFFFFF
+
+    _callsign: label.Label
+    _latlon: label.Label
+    _altitude: label.Label
+    _heading: label.Label
+    _groundspeed: label.Label
+
+    def __init__(self) -> None:
+        self.aircraft_info_group = displayio.Group(
+            x=((SKYPORTAL_DISPLAY.width - self._width) // 2),
+            y=((SKYPORTAL_DISPLAY.height - self._height) // 2),
+        )
+        self.aircraft_info_group.hidden = True
+
+        base_rect = RoundRect(
+            x=0,
+            y=0,
+            width=self._width,
+            height=self._height,
+            r=10,
+            fill=self._fill,
+            outline=0x000000,
+        )
+        self.aircraft_info_group.append(base_rect)
+
+        # Ideally I'd make some kind of layout manager but I'm starting lazy
+        label_p = partial(
+            label.Label,
+            anchor_point=(0, 0),
+            font=terminalio.FONT,
+            color=self._text_color,
+            background_color=self._text_fill,
+        )
+        LabelParams = namedtuple("LabelParams", ["text", "x", "y"])
+        label_x = self._rad
+        field_labels = (
+            LabelParams(text="Callsign/ICAO", x=label_x, y=3),
+            LabelParams(text="Lat/Long", x=label_x, y=18),
+            LabelParams(text="Altitude, ft MSL", x=label_x, y=33),
+            LabelParams(text="Heading, deg T", x=label_x, y=48),
+            LabelParams(text="Groundspeed, kts", x=label_x, y=63),
+        )
+        for lb in field_labels:
+            self.aircraft_info_group.append(label_p(anchored_position=(lb.x, lb.y), text=lb.text))
+
+        DataParams = namedtuple("DataParams", ["key", "text", "x", "y"])
+        data_x = self._width - self._rad
+        data_fields = (
+            DataParams(key="_callsign", text="123456", x=data_x, y=3),
+            DataParams(key="_latlon", text="(-12.345, -123.456)", x=data_x, y=18),
+            DataParams(key="_altitude", text="12,345", x=data_x, y=33),
+            DataParams(key="_heading", text="123", x=data_x, y=48),
+            DataParams(key="_groundspeed", text="123", x=data_x, y=63),
+        )
+        for dlb in data_fields:
+            lbl = label_p(anchor_point=(1, 0), anchored_position=(dlb.x, dlb.y), text=dlb.text)
+            setattr(self, dlb.key, lbl)
+            self.aircraft_info_group.append(lbl)
+
+        close_label = label.Label(
+            anchor_point=(0.5, 0),
+            anchored_position=(self._width // 2, 82),
+            text="Tap anywhere to close",
+            font=terminalio.FONT,
+            color=self._text_color,
+            background_color=0x808080,
+            padding_bottom=2,
+            padding_top=2,
+            padding_left=2,
+            padding_right=2,
+        )
+        self.aircraft_info_group.append(close_label)
+
+    def set_aircraft_info(self, aircraft: AircraftState) -> None:
+        """Update the data fields using the provided aircraft state vector."""
+        null_txt = "Unknown"
+        if aircraft.callsign is None:
+            self._callsign.text = aircraft.icao
+        else:
+            self._callsign.text = aircraft.callsign
+
+        if (aircraft.lat is None) or (aircraft.lon is None):
+            self._latlon.text = null_txt
+        else:
+            self._latlon.text = f"({aircraft.lat:0.3f}, {aircraft.lon:0.3f})"
+
+        if aircraft.geo_altitude_m is None:
+            self._altitude.text = null_txt
+        else:
+            # Convert from meters to feet
+            self._altitude.text = f"{aircraft.geo_altitude_m * 3.28084:,.0f}"
+
+        if aircraft.track is None:
+            self._heading.text = null_txt
+        else:
+            self._heading.text = f"{aircraft.track:.0f}"
+
+        if aircraft.velocity_mps is None:
+            self._groundspeed.text = null_txt
+        else:
+            # Convert from m/s to knots
+            self._groundspeed.text = f"{aircraft.velocity_mps * 1.9438:.0f}"
+
+
 class SkyPortalUI:  # noqa: D101
     main_display_group: displayio.Group
     aircraft_display_group: displayio.Group
@@ -160,6 +289,8 @@ class SkyPortalUI:  # noqa: D101
     screenshot_handler: ScreenshotHandler
     touchscreen_handler: TouchscreenHandler
 
+    aircraft_info: AircraftInfoBox
+
     grid_bounds: tuple[float, float, float, float]
 
     def __init__(self, enable_screenshot: bool = False) -> None:
@@ -170,9 +301,11 @@ class SkyPortalUI:  # noqa: D101
         self.screenshot_button_group = displayio.Group()
 
         SKYPORTAL_DISPLAY.root_group = self.main_display_group
-        self.build_splash()
+        self._build_splash()
         self.touchscreen_handler = TouchscreenHandler()
         self.screenshot_handler = ScreenshotHandler()
+
+        self.aircraft_info = AircraftInfoBox()
 
         self._enable_screenshot = enable_screenshot
 
@@ -184,12 +317,13 @@ class SkyPortalUI:  # noqa: D101
         # Not internet dependent, but dependent on the base map
         # Put aircraft below all other UI elements
         self.main_display_group.append(self.aircraft_display_group)
-        self.add_time_label()
+        self._add_time_label()
+        self.main_display_group.append(self.aircraft_info.aircraft_info_group)
 
         if self._enable_screenshot:
-            self.add_screenshot_buttons()
+            self._add_screenshot_buttons()
 
-    def build_splash(self) -> None:  # noqa: D102
+    def _build_splash(self) -> None:  # noqa: D102
         splash_display = displayio.Group()
         splash_img = displayio.OnDiskBitmap(SPLASH)
         splash_sprite = displayio.TileGrid(splash_img, pixel_shader=splash_img.pixel_shader)
@@ -229,7 +363,7 @@ class SkyPortalUI:  # noqa: D101
         self.main_display_group.pop()  # Remove the splash screen
         self.main_display_group.append(map_group)
 
-    def add_time_label(self) -> None:  # noqa: D102
+    def _add_time_label(self) -> None:  # noqa: D102
         self.time_label = label.Label(
             anchor_point=(0, 0),
             anchored_position=(2, 0),
@@ -246,7 +380,7 @@ class SkyPortalUI:  # noqa: D101
         self.time_label_group.append(self.time_label)
         self.main_display_group.append(self.time_label_group)
 
-    def add_screenshot_buttons(self) -> None:  # noqa: D102
+    def _add_screenshot_buttons(self) -> None:  # noqa: D102
         screenshot_enabled = ImageButton(
             SCREENSHOT_ENABLED,
             y=(SKYPORTAL_DISPLAY.height - 40),
@@ -319,12 +453,14 @@ class SkyPortalUI:  # noqa: D101
         )
 
     def touch_on(self) -> None:  # noqa: D102
-        self.screenshot_buttons[True].tilegrid.hidden = False
-        self.screenshot_buttons[False].tilegrid.hidden = True
+        if self._enable_screenshot:
+            self.screenshot_buttons[True].tilegrid.hidden = False
+            self.screenshot_buttons[False].tilegrid.hidden = True
 
     def touch_off(self) -> None:  # noqa: D102
-        self.screenshot_buttons[True].tilegrid.hidden = True
-        self.screenshot_buttons[False].tilegrid.hidden = False
+        if self._enable_screenshot:
+            self.screenshot_buttons[True].tilegrid.hidden = True
+            self.screenshot_buttons[False].tilegrid.hidden = False
 
     def process_touch(self, touch_coord: tuple[int, int, int]) -> None:
         """Process the provided touch input coordinate & fire the first action required."""
