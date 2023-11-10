@@ -1,3 +1,4 @@
+import math
 import os
 from collections import namedtuple
 
@@ -320,6 +321,8 @@ class SkyPortalUI:  # noqa: D101
 
     grid_bounds: tuple[float, float, float, float]
 
+    _aircraft_positions: dict[tuple[int, int], AircraftState]
+
     def __init__(self, enable_screenshot: bool = False) -> None:
         # Set up main display element
         self.main_display_group = displayio.Group()
@@ -333,6 +336,7 @@ class SkyPortalUI:  # noqa: D101
         self.screenshot_handler = ScreenshotHandler()
 
         self.aircraft_info = AircraftInfoBox()
+        self._aircraft_positions = {}
 
         self._enable_screenshot = enable_screenshot
 
@@ -436,6 +440,7 @@ class SkyPortalUI:  # noqa: D101
         NOTE: Aircraft icons are not drawn if an aircraft's state vector is missing the required
         position & orientation data.
         """
+        self._aircraft_positions = {}
         while len(self.aircraft_display_group):
             self.aircraft_display_group.pop()
 
@@ -474,10 +479,39 @@ class SkyPortalUI:  # noqa: D101
             )
             self.aircraft_display_group.append(icon)
 
+            # Cache the pixel locations so we can populate the info box on tap
+            self._aircraft_positions[(icon_x, icon_y)] = ap
+
         n_skipped = n_unplottable + n_ground
-        print(
-            f"Skipped drawing {n_skipped} aircraft ({n_unplottable} missing data, {n_ground} on ground)"  # noqa: E501
+        print(f"Skipped {n_skipped} aircraft ({n_unplottable} missing data, {n_ground} on ground)")
+
+    def _closest_aircraft(
+        self,
+        touch_coord: tuple[int, int],
+        threshold_px: int = 30,
+    ) -> t.Optional[AircraftState]:
+        """
+        Locate the aircraft icon closest to the provided touch point.
+
+        If no aircraft are plotted, or the closest aircraft is further from the touch point than the
+        specified pixel threshold, then `None` is returned.
+        """
+        if not self._aircraft_positions:
+            return None
+
+        dists = sorted(
+            (
+                (ac_state, dist(ac_loc, touch_coord))
+                for ac_loc, ac_state in self._aircraft_positions.items()
+            ),
+            key=lambda x: x[1],
         )
+
+        closest_ac, px_dist = dists[0]
+        if px_dist > threshold_px:
+            return None
+        else:
+            return closest_ac
 
     def touch_on(self) -> None:  # noqa: D102
         if self._enable_screenshot:
@@ -491,14 +525,25 @@ class SkyPortalUI:  # noqa: D101
 
     def process_touch(self, touch_coord: tuple[int, int, int]) -> None:
         """Process the provided touch input coordinate & fire the first action required."""
+        touch_x, touch_y, _ = touch_coord
         if self._enable_screenshot:
             self.screenshot_buttons[True].check_fire(touch_coord)
             return
 
         if self.aircraft_info.hidden:
-            print("Would search for closest aircraft here, then display it.")
-            self.aircraft_info.hidden = False
-            return
+            closest_ac = self._closest_aircraft((touch_x, touch_y))
+            if closest_ac is not None:
+                self.aircraft_info.set_aircraft_info(closest_ac)
+                self.aircraft_info.hidden = False
         else:
-            print("Closing aircraft info popup")
             self.aircraft_info.hidden = True
+
+
+def dist(p: tuple[int, int], q: tuple[int, int]) -> float:
+    """
+    Return the Euclidean distance between points `p` and `q`.
+
+    Taken from https://docs.python.org/3/library/math.html#math.dist since CircuitPython's `math`
+    library doesn't have this yet.
+    """
+    return math.sqrt(sum((px - qx) ** 2.0 for px, qx in zip(p, q)))
