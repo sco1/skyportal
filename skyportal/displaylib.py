@@ -1,3 +1,4 @@
+import gc
 import math
 import os
 from collections import namedtuple
@@ -87,7 +88,12 @@ class ScreenshotHandler:
 
         filename = f"screenshot_{dt.datetime.now().isoformat()}.bmp".replace(":", "_")
         print(self._log_str)
-        save_pixels(f"{self._dest}{filename}")
+
+        gc.collect()
+        try:
+            save_pixels(f"{self._dest}{filename}")
+        except MemoryError as e:
+            print("Not enough memory to save screenshot: ", e)
 
 
 class TouchscreenHandler:  # noqa: D101
@@ -156,15 +162,22 @@ class ImageButton:
 
         self.callback = callback
 
-    def _contains(self, touch_coord: tuple[int, int, int]) -> bool:
-        query_x, query_y, _ = touch_coord
+    def _contains(self, touch_coord: tuple[int, int]) -> bool:
+        query_x, query_y = touch_coord
 
         return (query_x in self._x_bounds) and (query_y in self._y_bounds)
 
-    def check_fire(self, touch_coord: tuple[int, int, int]) -> None:
-        """Check if the touch input is within the button's bounds & fire the callback if it is."""
+    def check_fire(self, touch_coord: tuple[int, int]) -> bool:
+        """
+        Check if the touch input is within the button's bounds & fire the callback if it is.
+
+        Optionally return a boolean to indicate whether or not the callback was executed.
+        """
         if self.callback is not None and self._contains(touch_coord):
             self.callback()
+            return True
+
+        return False
 
     def show(self, state: bool = True) -> None:  # noqa: D102
         self.tilegrid.hidden = state
@@ -524,11 +537,14 @@ class SkyPortalUI:  # noqa: D101
             self.screenshot_buttons[False].tilegrid.hidden = False
 
     def process_touch(self, touch_coord: tuple[int, int, int]) -> None:
-        """Process the provided touch input coordinate & fire the first action required."""
+        """Process the provided touch input coordinate & fire the action(s) required."""
         touch_x, touch_y, _ = touch_coord
         if self._enable_screenshot:
-            self.screenshot_buttons[True].check_fire(touch_coord)
-            return
+            did_screenshot = self.screenshot_buttons[True].check_fire((touch_x, touch_y))
+
+            # Skip checking for an aircraft to display if we just wanted to take a screenshot
+            if did_screenshot:
+                return
 
         if self.aircraft_info.hidden:
             closest_ac = self._closest_aircraft((touch_x, touch_y))
