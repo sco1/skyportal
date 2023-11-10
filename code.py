@@ -61,9 +61,7 @@ while True:
         skyportal_ui.touch_off()
         try:
             opensky_handler.update()
-        except APITimeoutError:
-            print("Request to OpenSky timed out")
-        except APIException as e:
+        except (APITimeoutError, APIException) as e:
             print(e)
 
         if opensky_handler.can_draw():

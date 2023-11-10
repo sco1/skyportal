@@ -105,6 +105,6 @@ class OpenSky:
             # Clean this up (e.g. the 502 error most commonly seen dumps a full HTML page)
             raise APIException("Error retrieving flight data from OpenSky") from e
         except (requests.OutOfRetries, TimeoutError):
-            raise APITimeoutError
+            raise APITimeoutError("Request timed out")
 
         print(f"Found {len(self.aircraft)} aircraft")

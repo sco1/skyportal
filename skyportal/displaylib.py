@@ -92,6 +92,8 @@ class ScreenshotHandler:
 class TouchscreenHandler:  # noqa: D101
     _touchscreen: adafruit_touchscreen.Touchscreen
 
+    _is_pressed: bool
+
     def __init__(self) -> None:
         self._touchscreen = adafruit_touchscreen.Touchscreen(
             x1_pin=board.TOUCH_XL,
@@ -101,12 +103,29 @@ class TouchscreenHandler:  # noqa: D101
             calibration=((5200, 59000), (5800, 57000)),
             size=(SKYPORTAL_DISPLAY.width, SKYPORTAL_DISPLAY.height),
         )
+        self._is_pressed = False
 
         print("Touchscreen initialized")
 
     @property
-    def touch_point(self) -> tuple[int, int, int] | None:  # noqa: D102
-        return self._touchscreen.touch_point  # type: ignore[no-any-return]
+    def touch_point(self) -> tuple[int, int, int] | None:
+        """
+        Helper layer to handle "debouncing" of touch screen inputs.
+
+        An attempt is made to discard all touch inputs after the initial input until the finger is
+        lifted from the screen. Due to the polling speed of the device, some inputs may still sneak
+        through before the state change can be recognized.
+        """
+        if self._touchscreen.touch_point is None:
+            if self._is_pressed:
+                self._is_pressed = False
+            return None
+        else:
+            if self._is_pressed:
+                return None
+            else:
+                self._is_pressed = True
+                return self._touchscreen.touch_point  # type: ignore[no-any-return]
 
 
 class ImageButton:
@@ -274,6 +293,14 @@ class AircraftInfoBox:
         else:
             # Convert from m/s to knots
             self._groundspeed.text = f"{aircraft.velocity_mps * 1.9438:.0f}"
+
+    @property
+    def hidden(self) -> bool:  # noqa: D102
+        return self.aircraft_info_group.hidden  # type: ignore[no-any-return]
+
+    @hidden.setter
+    def hidden(self, state: bool) -> None:  # noqa: D102
+        self.aircraft_info_group.hidden = state
 
 
 class SkyPortalUI:  # noqa: D101
@@ -466,3 +493,12 @@ class SkyPortalUI:  # noqa: D101
         """Process the provided touch input coordinate & fire the first action required."""
         if self._enable_screenshot:
             self.screenshot_buttons[True].check_fire(touch_coord)
+            return
+
+        if self.aircraft_info.hidden:
+            print("Would search for closest aircraft here, then display it.")
+            self.aircraft_info.hidden = False
+            return
+        else:
+            print("Closing aircraft info popup")
+            self.aircraft_info.hidden = True
