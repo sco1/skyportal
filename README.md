@@ -5,7 +5,7 @@ Heavily inspired by Bob Hammell"s PyPortal Flight Tracker ([GH](https://github.c
 
 Thank you to [markleoart](https://www.fiverr.com/markleoart) for creating the aircraft icon sprite sheets!
 
-![screenshot](./doc/screenie.bmp "SkyPortal in action")
+![screenshot1](./doc/screenie.bmp "SkyPortal in action") ![screenshot2](./doc/screenie_with_info.bmp "SkyPortal in action, with aircraft popup")
 
 ## Getting Started
 Users are assumed have read through [Adafruit's PyPortal learning guide](https://learn.adafruit.com/adafruit-pyportal). CircuitPython v8.2 is currently in use for this repository, no other versions are evaluated.
@@ -60,8 +60,8 @@ A collection of functionality-related constants is specified in `skyportal_confi
 
 | Variable Name              | Description                                           | Default  |
 |----------------------------|-------------------------------------------------------|----------|
-| `SHOW_SCREENSHOT_BUTTON`   | Provide a UI button for taking screenshots            | `True`   |
-| `KEEP_N_SCREENSHOTS`       | Keep the `n` most recent screenshots in SD storage    | `3`      |
+| `SHOW_SCREENSHOT_BUTTON`   | Provide a UI button for taking screenshots            | `False`  |
+| `KEEP_N_SCREENSHOTS`       | Keep the `n` most recent screenshots in SD storage    | `5`      |
 | `MAP_CENTER_LAT`           | Map center latitude, decimal degrees                  | `42.41`  |
 | `MAP_CENTER_LON`           | Map center longitude, deimal degrees                  | `-71.17` |
 | `GRID_WIDTH_MI`            | Map grid width, miles                                 | `15`     |

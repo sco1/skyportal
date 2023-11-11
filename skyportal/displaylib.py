@@ -196,7 +196,6 @@ class AircraftInfoBox:
     """
 
     aircraft_info_group: displayio.Group
-    data_labels: dict[str, label.Label]
 
     _width: int = 200
     _height: int = 80
