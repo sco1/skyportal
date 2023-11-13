@@ -36,6 +36,8 @@ SPLASH = "./assets/splash.bmp"
 DEFAULT_BASE_MAP = "./assets/default_map.bmp"
 SCREENSHOT_ENABLED = "./assets/camera_green.bmp"
 SCREENSHOT_DISABLED = "./assets/camera_red.bmp"
+GREEN_DOT = "./assets/green_dot.bmp"
+RED_DOT = "./assets/red_dot.bmp"
 
 
 class ScreenshotHandler:
@@ -280,7 +282,9 @@ class AircraftInfoBox:
     def set_aircraft_info(self, aircraft: AircraftState) -> None:
         """Update the data fields using the provided aircraft state vector."""
         null_txt = "Unknown"
-        if aircraft.callsign is None:
+
+        # Callsigns may sometimes be an empty string
+        if aircraft.callsign is None or not aircraft.callsign.strip():
             self._callsign.text = aircraft.icao
         else:
             self._callsign.text = aircraft.callsign
@@ -320,11 +324,11 @@ class SkyPortalUI:  # noqa: D101
     main_display_group: displayio.Group
     aircraft_display_group: displayio.Group
     time_label_group: displayio.Group
-    screenshot_button_group: displayio.Group
+    status_icon_group: displayio.Group
 
     time_label: label.Label
 
-    screenshot_buttons: dict[bool, ImageButton]
+    auxiliary_button_group: dict[bool, ImageButton]
 
     screenshot_handler: ScreenshotHandler
     touchscreen_handler: TouchscreenHandler
@@ -340,7 +344,7 @@ class SkyPortalUI:  # noqa: D101
         self.main_display_group = displayio.Group()
         self.aircraft_display_group = displayio.Group()
         self.time_label_group = displayio.Group()
-        self.screenshot_button_group = displayio.Group()
+        self.status_icon_group = displayio.Group()
 
         SKYPORTAL_DISPLAY.root_group = self.main_display_group
         self._build_splash()
@@ -365,6 +369,8 @@ class SkyPortalUI:  # noqa: D101
 
         if self._enable_screenshot:
             self._add_screenshot_buttons()
+        else:
+            self._add_status_buttons()
 
     def _build_splash(self) -> None:  # noqa: D102
         splash_display = displayio.Group()
@@ -432,11 +438,22 @@ class SkyPortalUI:  # noqa: D101
         screenshot_disabled = ImageButton(SCREENSHOT_DISABLED, y=(SKYPORTAL_DISPLAY.height - 40))
         screenshot_disabled.show(False)
 
-        self.screenshot_buttons = {True: screenshot_enabled, False: screenshot_disabled}
+        self.auxiliary_button_group = {True: screenshot_enabled, False: screenshot_disabled}
 
-        self.screenshot_button_group.append(screenshot_disabled.tilegrid)
-        self.screenshot_button_group.append(screenshot_enabled.tilegrid)
-        self.main_display_group.append(self.screenshot_button_group)
+        self.status_icon_group.append(screenshot_disabled.tilegrid)
+        self.status_icon_group.append(screenshot_enabled.tilegrid)
+        self.main_display_group.append(self.status_icon_group)
+
+    def _add_status_buttons(self) -> None:
+        screen_enabled = ImageButton(GREEN_DOT, y=(SKYPORTAL_DISPLAY.height - 15))
+        screen_disabled = ImageButton(RED_DOT, y=(SKYPORTAL_DISPLAY.height - 15))
+        screen_disabled.show(False)
+
+        self.auxiliary_button_group = {True: screen_enabled, False: screen_disabled}
+
+        self.status_icon_group.append(screen_disabled.tilegrid)
+        self.status_icon_group.append(screen_enabled.tilegrid)
+        self.main_display_group.append(self.status_icon_group)
 
     def draw_aircraft(
         self,
@@ -526,20 +543,18 @@ class SkyPortalUI:  # noqa: D101
             return closest_ac
 
     def touch_on(self) -> None:  # noqa: D102
-        if self._enable_screenshot:
-            self.screenshot_buttons[True].tilegrid.hidden = False
-            self.screenshot_buttons[False].tilegrid.hidden = True
+        self.auxiliary_button_group[True].tilegrid.hidden = False
+        self.auxiliary_button_group[False].tilegrid.hidden = True
 
     def touch_off(self) -> None:  # noqa: D102
-        if self._enable_screenshot:
-            self.screenshot_buttons[True].tilegrid.hidden = True
-            self.screenshot_buttons[False].tilegrid.hidden = False
+        self.auxiliary_button_group[True].tilegrid.hidden = True
+        self.auxiliary_button_group[False].tilegrid.hidden = False
 
     def process_touch(self, touch_coord: tuple[int, int, int]) -> None:
         """Process the provided touch input coordinate & fire the action(s) required."""
         touch_x, touch_y, _ = touch_coord
         if self._enable_screenshot:
-            did_screenshot = self.screenshot_buttons[True].check_fire((touch_x, touch_y))
+            did_screenshot = self.auxiliary_button_group[True].check_fire((touch_x, touch_y))
 
             # Skip checking for an aircraft to display if we just wanted to take a screenshot
             if did_screenshot:
