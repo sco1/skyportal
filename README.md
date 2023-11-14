@@ -62,6 +62,7 @@ A collection of functionality-related constants is specified in `skyportal_confi
 |----------------------------|-------------------------------------------------------|----------|
 | `SHOW_SCREENSHOT_BUTTON`   | Provide a UI button for taking screenshots            | `False`  |
 | `KEEP_N_SCREENSHOTS`       | Keep the `n` most recent screenshots in SD storage    | `5`      |
+| `USE_DEFAULT_MAP`          | Use the default map image rather than query Geoapify  | `False`  |
 | `MAP_CENTER_LAT`           | Map center latitude, decimal degrees                  | `42.41`  |
 | `MAP_CENTER_LON`           | Map center longitude, deimal degrees                  | `-71.17` |
 | `GRID_WIDTH_MI`            | Map grid width, miles                                 | `15`     |
@@ -69,7 +70,9 @@ A collection of functionality-related constants is specified in `skyportal_confi
 | `GEO_ALTITUDE_THRESHOLD_M` | Skip drawing aircraft below this GPS altitude, meters | `20`     |
 
 ## Touchscreen Functionality
-**NOTE:** Due to the lack of an available asynchronous requests library for CircuitPython, the call to the OpenSky API is blocking and will block touchscreen functionality until a response is obtained. An attempt is made to reflect the current blocking status in all UI elements, indicating to the user that their touch inputs can't be processed.
+**NOTE:** Touchscreen input is mostly limited to one touch event per screen tap, rather than continuously firing while the screen is being touched.
+
+**NOTE:** Due to the lack of an available asynchronous requests library for CircuitPython, the call to the OpenSky API is blocking and will block touchscreen functionality until a response is obtained. An attempt is made to have at least one UI element reflecting the current block state & indicate to the user that their touch inputs can't be processed.
 
 ### Aircraft Information
 Tapping on an aircraft icon will display state information for the aircraft closest to the registered touch point.

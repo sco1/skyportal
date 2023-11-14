@@ -21,7 +21,12 @@ from skyportal.aircraftlib import (
     ICON_TILE_SIZE,
 )
 from skyportal.maplib import calculate_pixel_position, get_base_map
-from skyportal_config import GEO_ALTITUDE_THRESHOLD_M, KEEP_N_SCREENSHOTS, SKIP_GROUND
+from skyportal_config import (
+    GEO_ALTITUDE_THRESHOLD_M,
+    KEEP_N_SCREENSHOTS,
+    SKIP_GROUND,
+    USE_DEFAULT_MAP,
+)
 
 # CircuitPython doesn't have the typing module, so throw this away at runtime
 try:
@@ -359,7 +364,7 @@ class SkyPortalUI:  # noqa: D101
     def post_connect_init(self, grid_bounds: tuple[float, float, float, float]) -> None:
         """Execute initialization task(s)y that are dependent on an internet connection."""
         self.grid_bounds = grid_bounds
-        self.set_base_map(grid_bounds=self.grid_bounds, use_default=True)
+        self.set_base_map(grid_bounds=self.grid_bounds)
 
         # Not internet dependent, but dependent on the base map
         # Put aircraft below all other UI elements
@@ -389,7 +394,7 @@ class SkyPortalUI:  # noqa: D101
         self.main_display_group.append(splash_display)
 
     def set_base_map(
-        self, grid_bounds: tuple[float, float, float, float], use_default: bool = False
+        self, grid_bounds: tuple[float, float, float, float], use_default: bool = USE_DEFAULT_MAP
     ) -> None:
         """
         Set the base map image on the PyPortal display.
