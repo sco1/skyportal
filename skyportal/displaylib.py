@@ -3,14 +3,14 @@ import math
 import os
 from collections import namedtuple
 
-import adafruit_datetime as dt
 import adafruit_touchscreen
 import board
 import displayio
 import terminalio
 from adafruit_bitmapsaver import save_pixels
+from adafruit_datetime import datetime
 from adafruit_display_shapes.roundrect import RoundRect
-from adafruit_display_text import label
+from adafruit_display_text import bitmap_label, label
 from circuitpython_functools import partial
 
 from skyportal.aircraftlib import (
@@ -93,7 +93,7 @@ class ScreenshotHandler:
         """
         self._rotate_images()
 
-        filename = f"screenshot_{dt.datetime.now().isoformat()}.bmp".replace(":", "_")
+        filename = f"screenshot_{datetime.now().isoformat()}.bmp".replace(":", "_")
         print(self._log_str)
 
         gc.collect()
@@ -219,6 +219,8 @@ class AircraftInfoBox:
     _groundspeed: label.Label
 
     def __init__(self) -> None:
+        gc.collect()
+
         self.aircraft_info_group = displayio.Group(
             x=((SKYPORTAL_DISPLAY.width - self._width) // 2),
             y=((SKYPORTAL_DISPLAY.height - self._height) // 2),
@@ -237,6 +239,16 @@ class AircraftInfoBox:
         self.aircraft_info_group.append(base_rect)
 
         # Ideally I'd make some kind of layout manager but I'm starting lazy
+        # Try to use this to save memory vs. labels for when the string doesn't have to change
+        bitmap_label_p = partial(
+            bitmap_label.Label,
+            anchor_point=(0, 0),
+            font=terminalio.FONT,
+            color=self._text_color,
+            background_color=self._text_fill,
+            save_text=False,
+        )
+
         label_p = partial(
             label.Label,
             anchor_point=(0, 0),
@@ -244,6 +256,7 @@ class AircraftInfoBox:
             color=self._text_color,
             background_color=self._text_fill,
         )
+
         LabelParams = namedtuple("LabelParams", ["text", "x", "y"])
         label_x = self._rad
         field_labels = (
@@ -254,7 +267,9 @@ class AircraftInfoBox:
             LabelParams(text="Groundspeed, kts", x=label_x, y=63),
         )
         for lb in field_labels:
-            self.aircraft_info_group.append(label_p(anchored_position=(lb.x, lb.y), text=lb.text))
+            self.aircraft_info_group.append(
+                bitmap_label_p(anchored_position=(lb.x, lb.y), text=lb.text)
+            )
 
         DataParams = namedtuple("DataParams", ["key", "text", "x", "y"])
         data_x = self._width - self._rad
@@ -270,7 +285,7 @@ class AircraftInfoBox:
             setattr(self, dlb.key, lbl)
             self.aircraft_info_group.append(lbl)
 
-        close_label = label.Label(
+        close_label = bitmap_label.Label(
             anchor_point=(0.5, 0),
             anchored_position=(self._width // 2, 82),
             text="Tap anywhere to close",
@@ -360,6 +375,7 @@ class SkyPortalUI:  # noqa: D101
         self._aircraft_positions = {}
 
         self._enable_screenshot = enable_screenshot
+        gc.collect()
 
     def post_connect_init(self, grid_bounds: tuple[float, float, float, float]) -> None:
         """Execute initialization task(s)y that are dependent on an internet connection."""
@@ -368,6 +384,7 @@ class SkyPortalUI:  # noqa: D101
 
         # Not internet dependent, but dependent on the base map
         # Put aircraft below all other UI elements
+        gc.collect()
         self.main_display_group.append(self.aircraft_display_group)
         self._add_time_label()
         self.main_display_group.append(self.aircraft_info.aircraft_info_group)
@@ -376,6 +393,8 @@ class SkyPortalUI:  # noqa: D101
             self._add_screenshot_buttons()
         else:
             self._add_status_buttons()
+
+        gc.collect()
 
     def _build_splash(self) -> None:  # noqa: D102
         splash_display = displayio.Group()

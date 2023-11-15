@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import gc
+
 import adafruit_imageload
 import displayio
 
@@ -126,3 +128,4 @@ BASE_ICON = AircraftIcon.from_file("./assets/airplane_icons.bmp")
 AIRCRAFT_ICONS = {
     AircraftCategory.ROTORCRAFT: AircraftIcon.from_file("./assets/heli_icons.bmp"),
 }
+gc.collect()

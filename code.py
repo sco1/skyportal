@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import gc
 import math
 
-import adafruit_datetime as dt
+from adafruit_datetime import datetime, timedelta
 from adafruit_pyportal import PyPortal
 
 from skyportal.displaylib import SkyPortalUI
@@ -20,7 +21,7 @@ except ImportError as e:
     raise Exception("Could not locate configuration file.") from e
 
 
-def _utc_to_local(utc_timestamp: int, utc_offset: str = "-0000") -> dt.datetime:
+def _utc_to_local(utc_timestamp: int, utc_offset: str = "-0000") -> datetime:
     """
     Convert the given timestamp into local time with the provided UTC offset.
 
@@ -28,9 +29,9 @@ def _utc_to_local(utc_timestamp: int, utc_offset: str = "-0000") -> dt.datetime:
     """
     hours = int(utc_offset[:3])
     minutes = math.copysign(int(utc_offset[-2:]), hours)
-    delta = dt.timedelta(hours=hours, minutes=minutes)
+    delta = timedelta(hours=hours, minutes=minutes)
 
-    utc_time = dt.datetime.fromtimestamp(utc_timestamp)
+    utc_time = datetime.fromtimestamp(utc_timestamp)
     return utc_time + delta
 
 
@@ -55,14 +56,16 @@ print(f"\n{'='*40}\nInitialization complete\n{'='*40}\n")
 
 # Main loop
 skyportal_ui.touch_on()
-loop_start_time = dt.datetime.now() - opensky_handler.refresh_interval  # Force first API call
+loop_start_time = datetime.now() - opensky_handler.refresh_interval  # Force first API call
 while True:
-    if (dt.datetime.now() - loop_start_time) >= opensky_handler.refresh_interval:
+    if (datetime.now() - loop_start_time) >= opensky_handler.refresh_interval:
         skyportal_ui.touch_off()
         try:
             opensky_handler.update()
         except (APITimeoutError, APIException) as e:
             print(e)
+
+        gc.collect()
 
         if opensky_handler.can_draw():
             print("Updating aircraft locations")
@@ -71,7 +74,7 @@ while True:
         else:
             print("No aircraft to draw, skipping redraw")
 
-        loop_start_time = dt.datetime.now()
+        loop_start_time = datetime.now()
         next_request_at = loop_start_time + opensky_handler.refresh_interval
         print(f"Sleeping... next refresh at {next_request_at} local")
         skyportal_ui.touch_on()
