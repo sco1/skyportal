@@ -357,6 +357,8 @@ class SkyPortalUI:  # noqa: D101
     _aircraft_positions: dict[tuple[int, int], AircraftState]
 
     def __init__(self, enable_screenshot: bool = False) -> None:
+        self._enable_screenshot = enable_screenshot
+
         # Set up main display element
         self.main_display_group = displayio.Group()
         self.aircraft_display_group = displayio.Group()
@@ -365,21 +367,19 @@ class SkyPortalUI:  # noqa: D101
 
         SKYPORTAL_DISPLAY.root_group = self.main_display_group
         self._build_splash()
-        self.touchscreen_handler = TouchscreenHandler()
-        self.screenshot_handler = ScreenshotHandler()
-
-        self.aircraft_info = AircraftInfoBox()
         self._aircraft_positions = {}
-
-        self._enable_screenshot = enable_screenshot
-        gc.collect()
 
     def post_connect_init(self, grid_bounds: tuple[float, float, float, float]) -> None:
         """Execute initialization task(s)y that are dependent on an internet connection."""
+        # Grab the base map first since it's heavily memory dependent
         self.grid_bounds = grid_bounds
         gc.collect()
         self.set_base_map(grid_bounds=self.grid_bounds)
         gc.collect()
+
+        self.touchscreen_handler = TouchscreenHandler()
+        self.screenshot_handler = ScreenshotHandler()
+        self.aircraft_info = AircraftInfoBox()
 
         # Not internet dependent, but dependent on the base map
         # Put aircraft below all other UI elements
