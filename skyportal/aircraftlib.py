@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import gc
-
 import adafruit_imageload
 import displayio
 
@@ -90,6 +88,8 @@ class AircraftState:  # noqa: D101
 
 
 class AircraftIcon:  # noqa: D101
+    TILE_SIZE: int = 16
+
     def __init__(
         self,
         icon_sheet: displayio.Bitmap,
@@ -122,10 +122,11 @@ class AircraftIcon:  # noqa: D101
         )
 
 
-# Current icon tiles are made using primary colors #ffff00 (yellow) and #25FF00 (green, background)
-ICON_TILE_SIZE = 16
-BASE_ICON = AircraftIcon.from_file("./assets/airplane_icons.bmp")
-AIRCRAFT_ICONS = {
-    AircraftCategory.ROTORCRAFT: AircraftIcon.from_file("./assets/heli_icons.bmp"),
-}
-gc.collect()
+def load_aircraft_icons() -> tuple[AircraftIcon, dict[int, AircraftIcon]]:
+    """Load & return aircraft icon sprite sheets."""
+    default_icon = AircraftIcon.from_file("./assets/airplane_icons.bmp")
+    extras = {
+        AircraftCategory.ROTORCRAFT: AircraftIcon.from_file("./assets/heli_icons.bmp"),
+    }
+
+    return default_icon, extras

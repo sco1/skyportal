@@ -13,13 +13,7 @@ from adafruit_display_shapes.roundrect import RoundRect
 from adafruit_display_text import bitmap_label, label
 from circuitpython_functools import partial
 
-from skyportal.aircraftlib import (
-    AIRCRAFT_ICONS,
-    AircraftIcon,
-    AircraftState,
-    BASE_ICON,
-    ICON_TILE_SIZE,
-)
+from skyportal.aircraftlib import AircraftIcon, AircraftState, load_aircraft_icons
 from skyportal.maplib import calculate_pixel_position, get_base_map
 from skyportal_config import (
     GEO_ALTITUDE_THRESHOLD_M,
@@ -348,6 +342,9 @@ class SkyPortalUI:  # noqa: D101
 
     time_label: label.Label
 
+    default_icon: AircraftIcon
+    custom_icons: dict[int, AircraftIcon]
+
     auxiliary_button_group: dict[bool, ImageButton]
 
     screenshot_handler: ScreenshotHandler
@@ -380,11 +377,12 @@ class SkyPortalUI:  # noqa: D101
     def post_connect_init(self, grid_bounds: tuple[float, float, float, float]) -> None:
         """Execute initialization task(s)y that are dependent on an internet connection."""
         self.grid_bounds = grid_bounds
+        gc.collect()
         self.set_base_map(grid_bounds=self.grid_bounds)
+        gc.collect()
 
         # Not internet dependent, but dependent on the base map
         # Put aircraft below all other UI elements
-        gc.collect()
         self.main_display_group.append(self.aircraft_display_group)
         self._add_time_label()
         self.main_display_group.append(self.aircraft_info.aircraft_info_group)
@@ -393,7 +391,9 @@ class SkyPortalUI:  # noqa: D101
             self._add_screenshot_buttons()
         else:
             self._add_status_buttons()
+        gc.collect()
 
+        self.base_icon, self.custom_icons = load_aircraft_icons()
         gc.collect()
 
     def _build_splash(self) -> None:  # noqa: D102
@@ -482,8 +482,6 @@ class SkyPortalUI:  # noqa: D101
     def draw_aircraft(
         self,
         aircraft: list[AircraftState],
-        default_icon: AircraftIcon = BASE_ICON,
-        custom_icons: dict[int, AircraftIcon] = AIRCRAFT_ICONS,
         skip_ground: bool = SKIP_GROUND,
         geo_altitude_threshold_m: float = GEO_ALTITUDE_THRESHOLD_M,
     ) -> None:
@@ -519,13 +517,13 @@ class SkyPortalUI:  # noqa: D101
                 grid_bounds=self.grid_bounds,
             )
 
-            icon_to_plot = custom_icons.get(ap.aircraft_category, default_icon)
+            icon_to_plot = self.custom_icons.get(ap.aircraft_category, self.default_icon)
             tile_index = int(ap.track / icon_to_plot.rotation_resolution_deg)  # type: ignore[operator]  # noqa: E501
             icon = displayio.TileGrid(
                 bitmap=icon_to_plot.icon_sheet,
                 pixel_shader=icon_to_plot.palette,
-                tile_width=ICON_TILE_SIZE,
-                tile_height=ICON_TILE_SIZE,
+                tile_width=icon_to_plot.TILE_SIZE,
+                tile_height=icon_to_plot.TILE_SIZE,
                 default_tile=tile_index,
                 x=icon_x,
                 y=icon_y,

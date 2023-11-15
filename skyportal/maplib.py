@@ -1,3 +1,4 @@
+import gc
 import math
 from collections import OrderedDict
 from secrets import secrets
@@ -129,9 +130,11 @@ def get_base_map(grid_bounds: tuple[float, float, float, float]) -> displayio.On
             raise RuntimeError(f"Bad response received from AdaIO: {r.status_code}, {r.text}")
 
         with open("./assets/generated_map.bmp", "wb") as f:
-            for chunk in r.iter_content(chunk_size=4096):
+            for chunk in r.iter_content(chunk_size=2048):
                 f.write(chunk)
 
+        del r
+        gc.collect()
         map_img = displayio.OnDiskBitmap("./assets/generated_map.bmp")
         print("Geoapify map tile successfully generated")
     except Exception as e:
