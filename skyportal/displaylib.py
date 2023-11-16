@@ -398,17 +398,15 @@ class SkyPortalUI:  # noqa: D101
 
     def _build_splash(self) -> None:  # noqa: D102
         splash_display = displayio.Group()
-        splash_img = displayio.OnDiskBitmap(SPLASH)
-        splash_sprite = displayio.TileGrid(splash_img, pixel_shader=splash_img.pixel_shader)
-        splash_label = label.Label(
+        splash_label = bitmap_label.Label(
             font=terminalio.FONT,
             color=0xFFFFFF,
             text="Initializing...",
             anchor_point=(0.5, 0.5),
             anchored_position=(SKYPORTAL_DISPLAY.width / 2, SKYPORTAL_DISPLAY.height * 0.9),
+            save_text=False,
         )
 
-        splash_display.append(splash_sprite)
         splash_display.append(splash_label)
         self.main_display_group.append(splash_display)
 
