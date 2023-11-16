@@ -5,7 +5,7 @@ from adafruit_datetime import timedelta
 from circuitpython_base64 import b64encode
 
 from skyportal.aircraftlib import AircraftState
-from skyportal.networklib import build_url
+from skyportal.networklib import APIException, APITimeoutError, build_url
 
 # CircuitPython doesn't have the typing module, so throw this away at runtime
 try:
@@ -14,14 +14,6 @@ except ImportError:
     pass
 
 OPENSKY_URL_BASE = "https://opensky-network.org/api/states/all"
-
-
-class APITimeoutError(TimeoutError):  # noqa: D101
-    pass
-
-
-class APIException(RuntimeError):  # noqa: D101
-    pass
 
 
 def _build_opensky_request(

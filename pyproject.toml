@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "skyportal"
-version = "0.1.0"
+version = "1.1.0"
 description = "A PyPortal based flight tracker"
 authors = ["sco1 <sco1.git@gmail.com>"]
 
@@ -8,7 +8,7 @@ readme = "README.md"
 homepage = "https://github.com/sco1/"
 repository = "https://github.com/sco1/skyportal"
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: Other OS",

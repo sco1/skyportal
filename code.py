@@ -8,7 +8,8 @@ from adafruit_pyportal import PyPortal
 
 from skyportal.displaylib import SkyPortalUI
 from skyportal.maplib import build_bounding_box
-from skyportal.opensky import APIException, APITimeoutError, OpenSky
+from skyportal.networklib import APIException, APITimeoutError
+from skyportal.opensky import OpenSky
 
 try:
     from secrets import secrets

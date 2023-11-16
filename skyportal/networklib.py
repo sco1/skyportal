@@ -5,6 +5,14 @@ except ImportError:
     pass
 
 
+class APITimeoutError(TimeoutError):  # noqa: D101
+    pass
+
+
+class APIException(RuntimeError):  # noqa: D101
+    pass
+
+
 def build_url(base: str, params: dict[str, t.Any]) -> str:
     """Build a url from the provided base & parameter(s)."""
     param_str = "&".join(f"{k}={v}" for k, v in params.items())
