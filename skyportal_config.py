@@ -1,9 +1,3 @@
-# UI Configuration
-SHOW_SCREENSHOT_BUTTON = False
-
-# Screenshot configuration
-KEEP_N_SCREENSHOTS = 5
-
 # Mapping information
 USE_DEFAULT_MAP = False
 MAP_CENTER_LAT = 42.41

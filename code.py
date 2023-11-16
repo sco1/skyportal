@@ -37,7 +37,7 @@ def _utc_to_local(utc_timestamp: int, utc_offset: str = "-0000") -> datetime:
 
 # Device Initialization
 PYPORTAL = PyPortal()  # This also takes care of mounting the SD to /sd
-skyportal_ui = SkyPortalUI(enable_screenshot=skyportal_config.SHOW_SCREENSHOT_BUTTON)
+skyportal_ui = SkyPortalUI()
 
 PYPORTAL.network.connect()
 print("Wifi connected")

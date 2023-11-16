@@ -153,7 +153,7 @@ class AircraftState:  # noqa: D101
             baro_alt *= 0.3048  # Provided in ft
             on_ground = False
 
-        if callsign := state_vector.get("flight", None) is None:
+        if (callsign := state_vector.get("flight", None)) is None:
             callsign = state_vector.get("r", None)
 
         # Ground track is likely not transmitted on the ground

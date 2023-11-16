@@ -61,8 +61,6 @@ A collection of functionality-related constants is specified in `skyportal_confi
 
 | Variable Name              | Description                                           | Default   |
 |----------------------------|-------------------------------------------------------|-----------|
-| `SHOW_SCREENSHOT_BUTTON`   | Provide a UI button for taking screenshots            | `False`   |
-| `KEEP_N_SCREENSHOTS`       | Keep the `n` most recent screenshots in SD storage    | `5`       |
 | `USE_DEFAULT_MAP`          | Use the default map image rather than query Geoapify  | `False`   |
 | `MAP_CENTER_LAT`           | Map center latitude, decimal degrees                  | `42.41`   |
 | `MAP_CENTER_LON`           | Map center longitude, deimal degrees                  | `-71.17`  |
@@ -78,6 +76,3 @@ A collection of functionality-related constants is specified in `skyportal_confi
 
 ### Aircraft Information
 Tapping on an aircraft icon will display state information for the aircraft closest to the registered touch point.
-
-### Screenshot
-If enabled in the SkyPortal configuration file, a screenshot button is created in the lower left, allowing the user to take a screenshot to SD card storage. The device utilizes a rolling storage, keeping the `n` most recent screenshots and discarding the oldest screenshot if above this threshold.
