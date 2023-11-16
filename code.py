@@ -8,7 +8,7 @@ from adafruit_pyportal import PyPortal
 
 from skyportal.displaylib import SkyPortalUI
 from skyportal.maplib import build_bounding_box
-from skyportal.networklib import APIException, APITimeoutError
+from skyportal.networklib import APIException, APIHandlerBase, APITimeoutError
 
 try:
     from secrets import secrets
@@ -21,7 +21,7 @@ except ImportError as e:
     raise Exception("Could not locate configuration file.") from e
 
 
-def _utc_to_local(utc_timestamp: int, utc_offset: str = "-0000") -> datetime:
+def _utc_to_local(utc_timestamp: float, utc_offset: str = "-0000") -> datetime:
     """
     Convert the given timestamp into local time with the provided UTC offset.
 
@@ -50,17 +50,18 @@ utc_offset = init_timestamp.split()[4]
 grid_bounds = build_bounding_box()
 skyportal_ui.post_connect_init(grid_bounds)
 
+api_handler: APIHandlerBase
 if skyportal_config.AIRCRAFT_DATA_SOURCE == "adsblol":
-    from skyportal.adsblol import AdsbLol
+    from skyportal.networklib import ADSBLol
 
-    api_handler = AdsbLol(
+    api_handler = ADSBLol(
         lat=skyportal_config.MAP_CENTER_LAT,
         lon=skyportal_config.MAP_CENTER_LON,
         radius=skyportal_config.GRID_WIDTH_MI * 2,
     )
     print("Using ADSB.lol as aircraft data source")
 elif skyportal_config.AIRCRAFT_DATA_SOURCE == "opensky":
-    from skyportal.opensky import OpenSky
+    from skyportal.networklib import OpenSky
 
     api_handler = OpenSky(grid_bounds=grid_bounds)
     print("Using OpenSky as aircraft data source")

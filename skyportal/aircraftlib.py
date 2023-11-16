@@ -87,7 +87,7 @@ class AircraftState:  # noqa: D101
         else:
             ac_id = self.icao
 
-        if self.is_plottable():
+        if self.is_plottable:
             track_str = f"({self.lat:0.3f}, {self.lon:0.3f}), {int(self.track)}º"  # type: ignore[arg-type]  # noqa: E501
         else:
             track_str = "No track information"
@@ -97,6 +97,7 @@ class AircraftState:  # noqa: D101
 
         return f"{ac_id}: {track_str}"
 
+    @property
     def is_plottable(self) -> bool:  # noqa: D102
         if self.lat is None:
             return False
@@ -146,7 +147,7 @@ class AircraftState:  # noqa: D101
         See: https://api.adsb.lol/docs for field schemas
         See: https://github.com/wiedehopf/readsb/blob/dev/README-json.md for ADSB field descriptions
         """
-        if baro_alt := state_vector["alt_baro"] == "ground":
+        if (baro_alt := state_vector["alt_baro"]) == "ground":
             baro_alt = None
             on_ground = True
         else:
@@ -161,7 +162,7 @@ class AircraftState:  # noqa: D101
         if (track := state_vector.get("track", None)) is None:
             track = state_vector.get("true_heading", None)
 
-        if (alt_geo := state_vector.get("alt_geo", None)) is not None:
+        if (alt_geo := state_vector.get("alt_geom", None)) is not None:
             alt_geo *= 0.3048  # Provided in ft
 
         if (baro_rate := state_vector.get("baro_rate", None)) is not None:

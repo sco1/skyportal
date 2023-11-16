@@ -274,7 +274,7 @@ class SkyPortalUI:  # noqa: D101
 
     time_label: label.Label
 
-    default_icon: AircraftIcon
+    base_icon: AircraftIcon
     custom_icons: dict[int, AircraftIcon]
 
     auxiliary_button_group: dict[bool, ImageButton]
@@ -405,7 +405,7 @@ class SkyPortalUI:  # noqa: D101
         n_unplottable = 0
         n_ground = 0
         for ap in aircraft:
-            if not ap.is_plottable():
+            if not ap.is_plottable:
                 n_unplottable += 1
                 continue
 
@@ -424,7 +424,7 @@ class SkyPortalUI:  # noqa: D101
                 grid_bounds=self.grid_bounds,
             )
 
-            icon_to_plot = self.custom_icons.get(ap.aircraft_category, self.default_icon)
+            icon_to_plot = self.custom_icons.get(ap.aircraft_category, self.base_icon)
             tile_index = int(ap.track / icon_to_plot.rotation_resolution_deg)  # type: ignore[operator]  # noqa: E501
             icon = displayio.TileGrid(
                 bitmap=icon_to_plot.icon_sheet,
