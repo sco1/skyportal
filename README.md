@@ -1,5 +1,5 @@
 # skyportal
-A PyPortal based flight tracker powered by [Adafruit](https://io.adafruit.com/), [Geoapify](https://www.geoapify.com/), and [The OpenSky Network](https://opensky-network.org/).
+A PyPortal based flight tracker powered by [Adafruit](https://io.adafruit.com/), [Geoapify](https://www.geoapify.com/), [ADSB.lol](https://adsb.lol), and [The OpenSky Network](https://opensky-network.org/).
 
 Heavily inspired by Bob Hammell"s PyPortal Flight Tracker ([GH](https://github.com/rhammell/pyportal-flight-tracker), [Tutorial](https://www.hackster.io/rhammell/pyportal-flight-tracker-0be6b0#story)).
 
@@ -50,6 +50,7 @@ secrets = {
     "aio_username" : "YOUR_AIO_USERNAME",
     "aio_key" : "YOUR_AIO_KEY",
     # Open Sky Network credentials, for getting flight information
+    # Can be omitted if not using OpenSky
     "opensky_username": "YOUR_OPENSKY_USERNAME",
     "opensky_password": "YOUR_OPENSKY_PASSWORD"
 }
@@ -58,16 +59,17 @@ secrets = {
 #### Skyportal Configuration
 A collection of functionality-related constants is specified in `skyportal_config.py`, which can be adjusted to suit your needs:
 
-| Variable Name              | Description                                           | Default  |
-|----------------------------|-------------------------------------------------------|----------|
-| `SHOW_SCREENSHOT_BUTTON`   | Provide a UI button for taking screenshots            | `False`  |
-| `KEEP_N_SCREENSHOTS`       | Keep the `n` most recent screenshots in SD storage    | `5`      |
-| `USE_DEFAULT_MAP`          | Use the default map image rather than query Geoapify  | `False`  |
-| `MAP_CENTER_LAT`           | Map center latitude, decimal degrees                  | `42.41`  |
-| `MAP_CENTER_LON`           | Map center longitude, deimal degrees                  | `-71.17` |
-| `GRID_WIDTH_MI`            | Map grid width, miles                                 | `15`     |
-| `SKIP_GROUND`              | Skip drawing aircraft on the ground                   | `True`   |
-| `GEO_ALTITUDE_THRESHOLD_M` | Skip drawing aircraft below this GPS altitude, meters | `20`     |
+| Variable Name              | Description                                           | Default   |
+|----------------------------|-------------------------------------------------------|-----------|
+| `SHOW_SCREENSHOT_BUTTON`   | Provide a UI button for taking screenshots            | `False`   |
+| `KEEP_N_SCREENSHOTS`       | Keep the `n` most recent screenshots in SD storage    | `5`       |
+| `USE_DEFAULT_MAP`          | Use the default map image rather than query Geoapify  | `False`   |
+| `MAP_CENTER_LAT`           | Map center latitude, decimal degrees                  | `42.41`   |
+| `MAP_CENTER_LON`           | Map center longitude, deimal degrees                  | `-71.17`  |
+| `GRID_WIDTH_MI`            | Map grid width, miles                                 | `15`      |
+| `AIRCRAFT_DATA_SOURCE`     | Aircraft State API to utilize                         | `adsblol` |
+| `SKIP_GROUND`              | Skip drawing aircraft on the ground                   | `True`    |
+| `GEO_ALTITUDE_THRESHOLD_M` | Skip drawing aircraft below this GPS altitude, meters | `20`      |
 
 ## Touchscreen Functionality
 **NOTE:** Touchscreen input is mostly limited to one touch event per screen tap, rather than continuously firing while the screen is being touched.

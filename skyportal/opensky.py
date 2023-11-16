@@ -1,9 +1,11 @@
-from secrets import secrets
+import gc
 
 import adafruit_requests as requests
 from adafruit_datetime import timedelta
 from circuitpython_base64 import b64encode
 
+import skyportal_config
+from secrets import secrets
 from skyportal.aircraftlib import AircraftState
 from skyportal.networklib import APIException, APITimeoutError, build_url
 
@@ -46,10 +48,21 @@ def _parse_opensky_response(opensky_json: dict) -> tuple[list[AircraftState], in
     See: https://openskynetwork.github.io/opensky-api/rest.html#id4 for state vector information.
     """
     api_time = opensky_json["time"]
-    return [AircraftState(state_vector) for state_vector in opensky_json["states"]], api_time
+
+    # If we're not plotting ground planes don't bother keeping them in memory
+    states = []
+    for state_vector in opensky_json["states"]:
+        state = AircraftState.from_adsblol(state_vector)
+        if skyportal_config.SKIP_GROUND and not state.is_plottable():
+            continue
+
+        states.append(state)
+
+    return states, api_time
 
 
 def _query_opensky(header: dict[str, str], url: str) -> dict[str, t.Any]:  # noqa: D103
+    gc.collect()
     r = requests.get(url=url, headers=header)
     if r.status_code != 200:
         raise RuntimeError(f"Bad response received from OpenSky: {r.status_code}, {r.text}")
@@ -82,6 +95,7 @@ class OpenSky:
         self.aircraft = []
         self.api_time = -1
 
+    @property
     def can_draw(self) -> bool:  # noqa: D102
         return bool(len(self.aircraft))
 
@@ -93,8 +107,9 @@ class OpenSky:
 
             print("Parsing OpenSky API response")
             self.aircraft, self.api_time = _parse_opensky_response(flight_data)
+            del flight_data
+            gc.collect()
         except RuntimeError as e:
-            # Clean this up (e.g. the 502 error most commonly seen dumps a full HTML page)
             raise APIException("Error retrieving flight data from OpenSky") from e
         except (requests.OutOfRetries, TimeoutError):
             raise APITimeoutError("Request timed out")

@@ -149,10 +149,10 @@ class ImageButton:
     _x_bounds: range
     _y_bounds: range
 
-    callback: t.Optional[t.Callable]
+    callback: t.Callable | None
 
     def __init__(
-        self, img_filepath: str, x: int = 0, y: int = 0, callback: t.Optional[t.Callable] = None
+        self, img_filepath: str, x: int = 0, y: int = 0, callback: t.Callable | None = None
     ) -> None:
         img = displayio.OnDiskBitmap(img_filepath)
 
@@ -445,7 +445,7 @@ class SkyPortalUI:  # noqa: D101
             padding_bottom=2,
             padding_left=2,
             padding_right=2,
-            text="Waiting for OpenSky...",
+            text="Waiting for data API...",
         )
 
         self.time_label_group.append(self.time_label)
@@ -538,7 +538,7 @@ class SkyPortalUI:  # noqa: D101
         self,
         touch_coord: tuple[int, int],
         threshold_px: int = 30,
-    ) -> t.Optional[AircraftState]:
+    ) -> AircraftState | None:
         """
         Locate the aircraft icon closest to the provided touch point.
 

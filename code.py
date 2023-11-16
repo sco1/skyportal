@@ -9,7 +9,6 @@ from adafruit_pyportal import PyPortal
 from skyportal.displaylib import SkyPortalUI
 from skyportal.maplib import build_bounding_box
 from skyportal.networklib import APIException, APITimeoutError
-from skyportal.opensky import OpenSky
 
 try:
     from secrets import secrets
@@ -51,32 +50,48 @@ utc_offset = init_timestamp.split()[4]
 grid_bounds = build_bounding_box()
 skyportal_ui.post_connect_init(grid_bounds)
 
-opensky_handler = OpenSky(grid_bounds=grid_bounds)
+if skyportal_config.AIRCRAFT_DATA_SOURCE == "adsblol":
+    from skyportal.adsblol import AdsbLol
 
+    api_handler = AdsbLol(
+        lat=skyportal_config.MAP_CENTER_LAT,
+        lon=skyportal_config.MAP_CENTER_LON,
+        radius=skyportal_config.GRID_WIDTH_MI * 2,
+    )
+    print("Using ADSB.lol as aircraft data source")
+elif skyportal_config.AIRCRAFT_DATA_SOURCE == "opensky":
+    from skyportal.opensky import OpenSky
+
+    api_handler = OpenSky(grid_bounds=grid_bounds)
+    print("Using OpenSky as aircraft data source")
+else:
+    raise ValueError(f"Unknown API specified: '{skyportal_config.AIRCRAFT_DATA_SOURCE}'")
+
+gc.collect()
 print(f"\n{'='*40}\nInitialization complete\n{'='*40}\n")
 
 # Main loop
 skyportal_ui.touch_on()
-loop_start_time = datetime.now() - opensky_handler.refresh_interval  # Force first API call
+loop_start_time = datetime.now() - api_handler.refresh_interval  # Force first API call
 while True:
-    if (datetime.now() - loop_start_time) >= opensky_handler.refresh_interval:
+    if (datetime.now() - loop_start_time) >= api_handler.refresh_interval:
         skyportal_ui.touch_off()
         try:
-            opensky_handler.update()
+            api_handler.update()
         except (APITimeoutError, APIException) as e:
             print(e)
 
         gc.collect()
 
-        if opensky_handler.can_draw():
+        if api_handler.can_draw:
             print("Updating aircraft locations")
-            skyportal_ui.draw_aircraft(opensky_handler.aircraft)
-            skyportal_ui.time_label.text = f"{_utc_to_local(opensky_handler.api_time, utc_offset)}"
+            skyportal_ui.draw_aircraft(api_handler.aircraft)
+            skyportal_ui.time_label.text = f"{_utc_to_local(api_handler.api_time, utc_offset)}"
         else:
             print("No aircraft to draw, skipping redraw")
 
         loop_start_time = datetime.now()
-        next_request_at = loop_start_time + opensky_handler.refresh_interval
+        next_request_at = loop_start_time + api_handler.refresh_interval
         print(f"Sleeping... next refresh at {next_request_at} local")
         skyportal_ui.touch_on()
 

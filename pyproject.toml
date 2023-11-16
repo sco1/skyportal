@@ -41,7 +41,7 @@ line-length = 100
 
 [tool.isort]
 case_sensitive = true
-known_first_party = "skyportal,tests"
+known_first_party = "skyportal,tests,secrets"
 no_lines_before = "LOCALFOLDER"
 order_by_type = false
 profile = "black"
