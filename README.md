@@ -1,5 +1,5 @@
 # skyportal
-A PyPortal based flight tracker powered by [Adafruit](https://io.adafruit.com/), [Geoapify](https://www.geoapify.com/), and [The OpenSky Network](https://opensky-network.org/).
+A PyPortal based flight tracker powered by [Adafruit](https://io.adafruit.com/), [Geoapify](https://www.geoapify.com/), [ADSB.lol](https://adsb.lol), and [The OpenSky Network](https://opensky-network.org/).
 
 Heavily inspired by Bob Hammell"s PyPortal Flight Tracker ([GH](https://github.com/rhammell/pyportal-flight-tracker), [Tutorial](https://www.hackster.io/rhammell/pyportal-flight-tracker-0be6b0#story)).
 
@@ -50,24 +50,61 @@ secrets = {
     "aio_username" : "YOUR_AIO_USERNAME",
     "aio_key" : "YOUR_AIO_KEY",
     # Open Sky Network credentials, for getting flight information
+    # Can be omitted if not using OpenSky
     "opensky_username": "YOUR_OPENSKY_USERNAME",
-    "opensky_password": "YOUR_OPENSKY_PASSWORD"
+    "opensky_password": "YOUR_OPENSKY_PASSWORD",
+    # Proxy API Gateway credentials
+    # Can be omitted if not using a proxy server
+    "proxy_api_url": "YOUR_PROXY_API_URL",
+    "proxy_api_key": "YOUR_PROXY_API_KEY",
 }
 ```
 
 #### Skyportal Configuration
 A collection of functionality-related constants is specified in `skyportal_config.py`, which can be adjusted to suit your needs:
 
-| Variable Name              | Description                                           | Default  |
-|----------------------------|-------------------------------------------------------|----------|
-| `SHOW_SCREENSHOT_BUTTON`   | Provide a UI button for taking screenshots            | `False`  |
-| `KEEP_N_SCREENSHOTS`       | Keep the `n` most recent screenshots in SD storage    | `5`      |
-| `USE_DEFAULT_MAP`          | Use the default map image rather than query Geoapify  | `False`  |
-| `MAP_CENTER_LAT`           | Map center latitude, decimal degrees                  | `42.41`  |
-| `MAP_CENTER_LON`           | Map center longitude, deimal degrees                  | `-71.17` |
-| `GRID_WIDTH_MI`            | Map grid width, miles                                 | `15`     |
-| `SKIP_GROUND`              | Skip drawing aircraft on the ground                   | `True`   |
-| `GEO_ALTITUDE_THRESHOLD_M` | Skip drawing aircraft below this GPS altitude, meters | `20`     |
+| Variable Name              | Description                                           | Default   |
+|----------------------------|-------------------------------------------------------|-----------|
+| `USE_DEFAULT_MAP`          | Use the default map image rather than query Geoapify  | `False`   |
+| `MAP_CENTER_LAT`           | Map center latitude, decimal degrees                  | `42.41`   |
+| `MAP_CENTER_LON`           | Map center longitude, deimal degrees                  | `-71.17`  |
+| `GRID_WIDTH_MI`            | Map grid width, miles                                 | `15`      |
+| `AIRCRAFT_DATA_SOURCE`     | Aircraft State API to utilize<sup>1</sup>             | `opensky` |
+| `SKIP_GROUND`              | Skip drawing aircraft on the ground                   | `True`    |
+| `GEO_ALTITUDE_THRESHOLD_M` | Skip drawing aircraft below this GPS altitude, meters | `20`      |
+
+**Notes:**
+1. See [Data Sources](#data-sources) for valid options
+
+## Data Sources
+### OpenSky-Network - `"opensky"`
+Query the [OpenSky Network](https://opensky-network.org/) API. This requires a user account to be created & credentials added to `secrets.py`.
+
+Information on their REST API can be found [here](https://openskynetwork.github.io/opensky-api/rest.html).
+
+### ADSB.lol - `"adsblol"`
+Query the [ADSB.lol](https://adsb.lol/). This currently does not require user authentication.
+
+Information on their REST API can be found [here](https://api.adsb.lol/docs).
+
+**NOTE:** This API provides a lot of interesting information in the state vector provided for each aircraft. Depending on the level of congestion in your query area, may be more data than can fit into RAM (See: [Known Limitations](#known-limitations)).
+
+### Proxy API - `"proxy"`
+Query a user-specified proxy server using the URL and API key provided in `secrets.py`.
+
+For authentication, the API is assumed to expect an key provided in the `"x-api-key"` header.
+
+The proxy API is assumed to expect three parameters:
+  * `lat`, center latitude, decimal degrees
+  * `lon`, denter longitude, decimal degrees
+  * `radius`, search radius, miles
+
+The proxy API is expected to return two parameters:
+  * `"ac"` - A list of state vectors, as dictionaries, whose kv pairs map directly to `skyportal.aircraftlib.AircraftState`
+  * `"api_time"` - UTC epoch time, seconds, may be a float
+
+An example using ADSB.lol and AWS Lambda is provided by this repository in [`./adsblol-proxy`](./adsblol-proxy/README.md)
+
 
 ## Touchscreen Functionality
 **NOTE:** Touchscreen input is mostly limited to one touch event per screen tap, rather than continuously firing while the screen is being touched.
@@ -77,5 +114,5 @@ A collection of functionality-related constants is specified in `skyportal_confi
 ### Aircraft Information
 Tapping on an aircraft icon will display state information for the aircraft closest to the registered touch point.
 
-### Screenshot
-If enabled in the SkyPortal configuration file, a screenshot button is created in the lower left, allowing the user to take a screenshot to SD card storage. The device utilizes a rolling storage, keeping the `n` most recent screenshots and discarding the oldest screenshot if above this threshold.
+## Known Limitations
+The PyPortal is a highly memory constrained environment, which presents challenges when aiming to create a highly expressive UI. While every attempt is being made to minimize memory usage to keep the Skyportal functioning, the device may occasionally run out of memory. The most likely point for this to happen is when receiving the web request with aircraft state information from your API of choice. Depending on how congested your selected airspace is at query time, there may simply be too much information provided by the API for the device to handle & I've intentionally left the exception unhandled so it will crash the device. Should you find this ocurring often, you may be interested in setting up a proxy server to return only the information needed for the device to function, which can significantly alleviate the amount of RAM needed. See [Proxy API](#proxy-api---proxy) for more information.

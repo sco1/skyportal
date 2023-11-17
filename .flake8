@@ -20,4 +20,4 @@ extend-ignore=
 extend-exclude=
     .venv,
 per-file-ignores =
-    tests/test_*.py:D103 E501,
+    skyportal/networklib.py:E731,

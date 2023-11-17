@@ -1,12 +1,12 @@
 import gc
 import math
 from collections import OrderedDict
-from secrets import secrets
 
 import adafruit_requests as requests
 import board
 import displayio
 
+from secrets import secrets
 from skyportal.networklib import build_url, urlencode
 from skyportal_config import GRID_WIDTH_MI, MAP_CENTER_LAT, MAP_CENTER_LON
 
