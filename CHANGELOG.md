@@ -1,7 +1,7 @@
 # Changelog
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (`<major>`.`<minor>`.`<patch>`)
 
-## [vNext]
+## [v1.2.0]
 ### Added
 * #14 Add support for the ADSB.lol API
 * #14 Add support for a generic flight data API
