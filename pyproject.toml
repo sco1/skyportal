@@ -60,7 +60,7 @@ warn_redundant_casts = true
 warn_return_any = true
 warn_unused_configs = true
 warn_unused_ignores = true
-exclude = ["lib"]
+exclude = ["lib", "adsblol-proxy"]
 
 [tool.pyright]
 reportShadowedImports = false

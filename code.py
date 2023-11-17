@@ -65,6 +65,15 @@ elif skyportal_config.AIRCRAFT_DATA_SOURCE == "opensky":
 
     api_handler = OpenSky(grid_bounds=grid_bounds)
     print("Using OpenSky as aircraft data source")
+elif skyportal_config.AIRCRAFT_DATA_SOURCE == "proxy":
+    from skyportal.networklib import ProxyAPI
+
+    api_handler = ProxyAPI(
+        lat=skyportal_config.MAP_CENTER_LAT,
+        lon=skyportal_config.MAP_CENTER_LON,
+        radius=skyportal_config.GRID_WIDTH_MI * 2,
+    )
+    print("Using proxy API as aircraft data source")
 else:
     raise ValueError(f"Unknown API specified: '{skyportal_config.AIRCRAFT_DATA_SOURCE}'")
 

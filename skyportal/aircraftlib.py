@@ -156,6 +156,8 @@ class AircraftState:  # noqa: D101
 
         if (callsign := state_vector.get("flight", None)) is None:
             callsign = state_vector.get("r", None)
+        if callsign is not None:
+            callsign = callsign.strip()
 
         # Ground track is likely not transmitted on the ground
         # If an aircraft is on the ground it may be transmitting true_heading
@@ -181,6 +183,16 @@ class AircraftState:  # noqa: D101
             vertical_rate_mps=baro_rate,
             aircraft_category=getattr(AircraftCategory, state_vector.get("category", "NO_INFO"), 0),
         )
+
+    @classmethod
+    def from_proxy(cls, state_vector: dict) -> AircraftState:
+        """
+        Build an aircraft state from the provided proxy server state vector.
+
+        The proxy server's response is expected to match exactly with `AircraftState`'s expected
+        data layout.
+        """
+        return cls(**state_vector)
 
 
 class AircraftIcon:  # noqa: D101

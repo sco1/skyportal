@@ -171,3 +171,41 @@ class ADSBLol(APIHandlerBase):
     def __init__(self, lat: float, lon: float, radius: int) -> None:
         self._url = f"{self._api_url_base}/lat/{lat}/lon/{lon}/dist/{radius}"
         self.aircraft = []
+
+
+class ProxyAPI(APIHandlerBase):
+    """
+    Proxy API handler.
+
+    API is assumed to expect three parameters:
+        * Latitude, decimal degrees
+        * Longitude, decimal degrees
+        * Search radius, miles
+
+    API is expected to return two parameters:
+        * `"ac"` - A list of state vectors, as dictionaries, whose kv pairs map to `AircraftState`
+        * `"api_time"` - UTC epoc time, seconds, may be a float
+    """
+
+    _name = "Proxy API"
+    _api_url_base = secrets["proxy_api_url"]
+
+    _api_time_key = "api_time"
+    _aircraft_key = "ac"
+    _aircraft_converter = AircraftState.from_proxy
+
+    def __init__(self, lat: float, lon: float, radius: int) -> None:
+        self._url, self._header = self._build_request(lat=lat, lon=lon, radius=radius)
+        self.aircraft = []
+
+    def _build_request(self, lat: float, lon: float, radius: int) -> tuple[str, dict[str, str]]:
+        """Build the OpenSky API authorization header & request URL for the desired location."""
+        proxy_params = {
+            "lat": lat,
+            "lon": lon,
+            "radius": radius,
+        }
+        proxy_url = build_url(self._api_url_base, proxy_params)
+        proxy_header = {"x-api-key": secrets["proxy_api_key"]}
+
+        return proxy_url, proxy_header
