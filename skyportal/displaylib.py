@@ -404,6 +404,7 @@ class SkyPortalUI:  # noqa: D101
 
         n_unplottable = 0
         n_ground = 0
+        n_offscreen = 0
         for ap in aircraft:
             if not ap.is_plottable:
                 n_unplottable += 1
@@ -424,6 +425,13 @@ class SkyPortalUI:  # noqa: D101
                 grid_bounds=self.grid_bounds,
             )
 
+            # Don't plot if the icon won't appear on screen
+            x_off = icon_x > (SKYPORTAL_DISPLAY.width + self.base_icon.TILE_SIZE)
+            y_off = icon_y > (SKYPORTAL_DISPLAY.height + self.base_icon.TILE_SIZE)
+            if x_off or y_off:
+                n_offscreen += 1
+                continue
+
             icon_to_plot = self.custom_icons.get(ap.aircraft_category, self.base_icon)
             tile_index = int(ap.track / icon_to_plot.rotation_resolution_deg)  # type: ignore[operator]  # noqa: E501
             icon = displayio.TileGrid(
@@ -441,7 +449,9 @@ class SkyPortalUI:  # noqa: D101
             self._aircraft_positions[(icon_x, icon_y)] = ap
 
         n_skipped = n_unplottable + n_ground
-        print(f"Skipped {n_skipped} aircraft ({n_unplottable} missing data, {n_ground} on ground)")
+        print(
+            f"Skipped {n_skipped} aircraft ({n_unplottable} missing data, {n_ground} on ground, {n_offscreen} off screen)"  # noqa: E501
+        )
 
     def _closest_aircraft(
         self,
