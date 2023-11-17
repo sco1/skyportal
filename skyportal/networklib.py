@@ -177,14 +177,16 @@ class ProxyAPI(APIHandlerBase):
     """
     Proxy API handler.
 
+    For authentication, the API is assumed to expect an key provided in the `"x-api-key"` header.
+
     API is assumed to expect three parameters:
-        * Latitude, decimal degrees
-        * Longitude, decimal degrees
-        * Search radius, miles
+        * `lat`, center latitude, decimal degrees
+        * `lon`, denter longitude, decimal degrees
+        * `radius`, search radius, miles
 
     API is expected to return two parameters:
         * `"ac"` - A list of state vectors, as dictionaries, whose kv pairs map to `AircraftState`
-        * `"api_time"` - UTC epoc time, seconds, may be a float
+        * `"api_time"` - UTC epoch time, seconds, may be a float
     """
 
     _name = "Proxy API"
