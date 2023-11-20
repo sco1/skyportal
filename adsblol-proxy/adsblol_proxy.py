@@ -1,8 +1,42 @@
 import json
+from enum import IntEnum
 
 import httpx
 
 URL_BASE = "https://api.adsb.lol/v2"
+
+
+class AircraftCategory(IntEnum):
+    """
+    Map ADSB category codes to integers.
+
+    For downstream simplicity, these integers are mapped to the outputs of the OpenSky Network API.
+    API details can be found here: https://openskynetwork.github.io/opensky-api/rest.html#response
+    """
+
+    NO_INFO = 0
+    A0 = 1
+    A1 = 2
+    A2 = 3
+    A3 = 4
+    A4 = 5
+    A5 = 6
+    A6 = 7
+    A7 = 8
+    B0 = 1
+    B1 = 9
+    B2 = 10
+    B3 = 11
+    B4 = 12
+    B5 = 13
+    B6 = 14
+    B7 = 15
+    C0 = 1
+    C1 = 16
+    C2 = 17
+    C3 = 18
+    C4 = 19
+    C5 = 20
 
 
 def query_data(lat: float, lon: float, radius: float) -> dict:
@@ -57,7 +91,7 @@ def simplify_aircraft(flight_data: list[dict]) -> list[dict]:
             "baro_altitude_m": baro_alt,
             "geo_altitude_m": alt_geo,
             "vertical_rate_mps": baro_rate,
-            "aircraft_category": state_vector.get("category", "NO_INFO"),
+            "aircraft_category": AircraftCategory[state_vector.get("category", "NO_INFO")],
         }
 
         airborne_flights.append(simplified_vector)

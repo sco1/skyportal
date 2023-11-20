@@ -92,7 +92,7 @@ Information on their REST API can be found [here](https://api.adsb.lol/docs).
 ### Proxy API - `"proxy"`
 Query a user-specified proxy server using the URL and API key provided in `secrets.py`.
 
-For authentication, the API is assumed to expect an key provided in the `"x-api-key"` header.
+For authentication, the API is assumed to expect an API key provided in the `"x-api-key"` header.
 
 The proxy API is assumed to expect three parameters:
   * `lat`, center latitude, decimal degrees
@@ -101,7 +101,7 @@ The proxy API is assumed to expect three parameters:
 
 The proxy API is expected to return two parameters:
   * `"ac"` - A list of state vectors, as dictionaries, whose kv pairs map directly to `skyportal.aircraftlib.AircraftState`
-  * `"api_time"` - UTC epoch time, seconds, may be a float
+  * `"api_time"` - UTC epoch time, in seconds, may be a float
 
 An example using ADSB.lol and AWS Lambda is provided by this repository in [`./adsblol-proxy`](./adsblol-proxy/README.md)
 
@@ -109,10 +109,10 @@ An example using ADSB.lol and AWS Lambda is provided by this repository in [`./a
 ## Touchscreen Functionality
 **NOTE:** Touchscreen input is mostly limited to one touch event per screen tap, rather than continuously firing while the screen is being touched.
 
-**NOTE:** Due to the lack of an available asynchronous requests library for CircuitPython, the call to the OpenSky API is blocking and will block touchscreen functionality until a response is obtained. An attempt is made to have at least one UI element reflecting the current block state & indicate to the user that their touch inputs can't be processed.
+**NOTE:** Due to the lack of an available asynchronous requests library for CircuitPython, web calls are blocking and will block touchscreen functionality until a response is obtained. A UI element in the lower left corner notifies the user whether or not the screen is currently able to process touch inputs.
 
 ### Aircraft Information
-Tapping on an aircraft icon will display state information for the aircraft closest to the registered touch point.
+Tapping on an aircraft icon will display state information for the aircraft closest to the registered touch point; this lookup is thresholded to a maximum distance of 30 pixels from the touch point. There is currently no method to disambiguate between aircraft that are in very close proximity.
 
 ## Known Limitations
 The PyPortal is a highly memory constrained environment, which presents challenges when aiming to create a highly expressive UI. While every attempt is being made to minimize memory usage to keep the Skyportal functioning, the device may occasionally run out of memory. The most likely point for this to happen is when receiving the web request with aircraft state information from your API of choice. Depending on how congested your selected airspace is at query time, there may simply be too much information provided by the API for the device to handle & I've intentionally left the exception unhandled so it will crash the device. Should you find this ocurring often, you may be interested in setting up a proxy server to return only the information needed for the device to function, which can significantly alleviate the amount of RAM needed. See [Proxy API](#proxy-api---proxy) for more information.
