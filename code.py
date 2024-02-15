@@ -8,7 +8,7 @@ from adafruit_pyportal import PyPortal
 
 from skyportal.displaylib import SkyPortalUI
 from skyportal.maplib import build_bounding_box
-from skyportal.networklib import APIException, APIHandlerBase, APITimeoutError
+from skyportal.networklib import APIExceptionError, APIHandlerBase, APITimeoutError
 
 try:
     from secrets import secrets
@@ -88,7 +88,7 @@ while True:
         skyportal_ui.touch_off()
         try:
             api_handler.update()
-        except (APITimeoutError, APIException) as e:
+        except (APITimeoutError, APIExceptionError) as e:
             print(e)
 
         gc.collect()

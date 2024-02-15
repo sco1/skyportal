@@ -19,7 +19,7 @@ class APITimeoutError(TimeoutError):  # noqa: D101
     pass
 
 
-class APIException(RuntimeError):  # noqa: D101
+class APIExceptionError(RuntimeError):  # noqa: D101
     pass
 
 
@@ -104,9 +104,9 @@ class APIHandlerBase:  # noqa: D101
             del flight_data
             gc.collect()
         except RuntimeError as e:
-            raise APIException(f"Error retrieving flight data from {self._name}") from e
-        except (requests.OutOfRetries, TimeoutError):
-            raise APITimeoutError("Request timed out")
+            raise APIExceptionError(f"Error retrieving flight data from {self._name}") from e
+        except (requests.OutOfRetries, TimeoutError) as e:
+            raise APITimeoutError("Request timed out") from e
 
         print(f"Found {len(self.aircraft)} aircraft")
 
