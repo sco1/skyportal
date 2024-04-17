@@ -1,14 +1,14 @@
 # skyportal
 A PyPortal based flight tracker powered by [Adafruit](https://io.adafruit.com/), [Geoapify](https://www.geoapify.com/), [ADSB.lol](https://adsb.lol), and [The OpenSky Network](https://opensky-network.org/).
 
-Heavily inspired by Bob Hammell"s PyPortal Flight Tracker ([GH](https://github.com/rhammell/pyportal-flight-tracker), [Tutorial](https://www.hackster.io/rhammell/pyportal-flight-tracker-0be6b0#story)).
+Heavily inspired by Bob Hammell's PyPortal Flight Tracker ([GH](https://github.com/rhammell/pyportal-flight-tracker), [Tutorial](https://www.hackster.io/rhammell/pyportal-flight-tracker-0be6b0#story)).
 
 Thank you to [markleoart](https://www.fiverr.com/markleoart) for creating the aircraft icon sprite sheets!
 
 ![screenshot1](./doc/screenie.bmp "SkyPortal in action") ![screenshot2](./doc/screenie_with_info.bmp "SkyPortal in action, with aircraft popup")
 
 ## Getting Started
-Users are assumed have read through [Adafruit's PyPortal learning guide](https://learn.adafruit.com/adafruit-pyportal). CircuitPython v8.2 is currently in use for this repository, no other versions are evaluated.
+Users are assumed have read through [Adafruit's PyPortal learning guide](https://learn.adafruit.com/adafruit-pyportal). CircuitPython v9.0 is currently in use for this repository, no other versions are evaluated.
 
 The CircuitPython libraries in `lib` are sourced from the Official and Community bundles, which can be found on the [CircuitPython libraries page](https://learn.adafruit.com/adafruit-pyportal)
 
