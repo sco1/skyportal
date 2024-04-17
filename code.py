@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gc
 import math
+import os
 
 from adafruit_datetime import datetime, timedelta
 from adafruit_pyportal import PyPortal
@@ -34,6 +35,13 @@ def _utc_to_local(utc_timestamp: float, utc_offset: str = "-0000") -> datetime:
     utc_time = datetime.fromtimestamp(utc_timestamp)
     return utc_time + delta
 
+# Starting with CircuitPython v9.0 an "sd" folder has to be created to be used as a mount point
+# For newer installs this should already be present but may not if migrating from v8.x
+# See: https://github.com/adafruit/circuitpython/issues/8872
+# See: https://github.com/adafruit/circuitpython/pull/8860
+if not "sd" in os.listdir("/"):
+    # Our boot.py already makes the filesystem writeable so we shouldn't need to guard
+    os.mkdir("/sd")
 
 # Device Initialization
 PYPORTAL = PyPortal()  # This also takes care of mounting the SD to /sd
