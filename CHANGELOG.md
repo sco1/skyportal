@@ -1,6 +1,11 @@
 # Changelog
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (`<major>`.`<minor>`.`<patch>`)
 
+## [v1.3.0]
+### Changed
+* #20 Bump supported CircuitPython to v9.x only
+* #20 Update vendored libraries to v9.0 compatible `*.mpy` files
+
 ## [v1.2.0]
 ### Added
 * #14 Add support for the ADSB.lol API

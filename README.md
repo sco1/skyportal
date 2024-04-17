@@ -8,9 +8,9 @@ Thank you to [markleoart](https://www.fiverr.com/markleoart) for creating the ai
 ![screenshot1](./doc/screenie.bmp "SkyPortal in action") ![screenshot2](./doc/screenie_with_info.bmp "SkyPortal in action, with aircraft popup")
 
 ## Getting Started
-Users are assumed have read through [Adafruit's PyPortal learning guide](https://learn.adafruit.com/adafruit-pyportal). CircuitPython v9.0 is currently in use for this repository, no other versions are evaluated.
+Users are assumed have read through [Adafruit's PyPortal learning guide](https://learn.adafruit.com/adafruit-pyportal). CircuitPython v9.0 is currently in use for this repository, no other versions are evaluated & reverse compatibility is not guaranteed.
 
-The CircuitPython libraries in `lib` are sourced from the Official and Community bundles, which can be found on the [CircuitPython libraries page](https://learn.adafruit.com/adafruit-pyportal)
+The CircuitPython libraries in `lib` are sourced from the Official and Community bundles, which can be found on the [CircuitPython libraries page](https://learn.adafruit.com/adafruit-pyportal). Compatibility for a given SkyPortal release is only ensured with library files vendored by this repository.
 
 **WARNING:** In order to generate the background map tile, this project's `boot.py` modifies the boot process to allow the filesystem to be used as a writeable cache. In the unlikely event that things go horribly awry you may lose the existing contents of your device, so be sure to back them up before working with this project.
 
