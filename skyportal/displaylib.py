@@ -2,6 +2,7 @@ import gc
 import math
 from collections import namedtuple
 
+import adafruit_requests as requests
 import adafruit_touchscreen
 import board
 import displayio
@@ -298,7 +299,11 @@ class SkyPortalUI:  # noqa: D101
         self._build_splash()
         self._aircraft_positions = {}
 
-    def post_connect_init(self, grid_bounds: tuple[float, float, float, float]) -> None:
+    def post_connect_init(
+        self,
+        grid_bounds: tuple[float, float, float, float],
+        request_session: requests.Session,
+    ) -> None:
         """Execute initialization task(s)y that are dependent on an internet connection."""
         # Grab the base map first since it's heavily memory dependent
         self.grid_bounds = grid_bounds

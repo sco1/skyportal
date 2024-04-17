@@ -42,6 +42,7 @@ def urlencode(url: str) -> str:
 
 
 class APIHandlerBase:  # noqa: D101
+    request_session: requests.Session
     refresh_interval: timedelta = timedelta(seconds=30)
 
     aircraft: list[AircraftState]
@@ -66,7 +67,7 @@ class APIHandlerBase:  # noqa: D101
 
     def _query_api(self, url: str, header: dict[str, str] | None = None) -> dict[str, t.Any]:
         gc.collect()
-        r = requests.get(url=url, headers=header)
+        r = self.request_session.get(url=url, headers=header)
         if r.status_code != 200:
             raise RuntimeError(
                 f"Bad response received from {self._name}: {r.status_code}, {r.text}"
@@ -126,9 +127,12 @@ class OpenSky(APIHandlerBase):
     _aircraft_key = "states"
     _aircraft_converter = AircraftState.from_opensky
 
-    def __init__(self, grid_bounds: tuple[float, float, float, float]) -> None:
+    def __init__(
+        self, grid_bounds: tuple[float, float, float, float], request_session: requests.Session
+    ) -> None:
         self._url, self._header = self._build_request(*grid_bounds)
         self.aircraft = []
+        self.request_session = request_session
 
     def _build_request(
         self, lat_min: float, lat_max: float, lon_min: float, lon_max: float
@@ -168,9 +172,16 @@ class ADSBLol(APIHandlerBase):
     _aircraft_key = "ac"
     _aircraft_converter = AircraftState.from_adsblol
 
-    def __init__(self, lat: float, lon: float, radius: int) -> None:
+    def __init__(
+        self,
+        lat: float,
+        lon: float,
+        radius: int,
+        request_session: requests.Session,
+    ) -> None:
         self._url = f"{self._api_url_base}/lat/{lat}/lon/{lon}/dist/{radius}"
         self.aircraft = []
+        self.request_session = request_session
 
 
 class ProxyAPI(APIHandlerBase):
@@ -196,9 +207,12 @@ class ProxyAPI(APIHandlerBase):
     _aircraft_key = "ac"
     _aircraft_converter = AircraftState.from_proxy
 
-    def __init__(self, lat: float, lon: float, radius: int) -> None:
+    def __init__(
+        self, lat: float, lon: float, radius: int, request_session: requests.Session
+    ) -> None:
         self._url, self._header = self._build_request(lat=lat, lon=lon, radius=radius)
         self.aircraft = []
+        self.request_session = request_session
 
     def _build_request(self, lat: float, lon: float, radius: int) -> tuple[str, dict[str, str]]:
         """Build the OpenSky API authorization header & request URL for the desired location."""
