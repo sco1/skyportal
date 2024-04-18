@@ -307,7 +307,7 @@ class SkyPortalUI:  # noqa: D101
         """Execute initialization task(s)y that are dependent on an internet connection."""
         # Grab the base map first since it's heavily memory dependent
         self.grid_bounds = grid_bounds
-        self.set_base_map(grid_bounds=self.grid_bounds)
+        self.set_base_map(grid_bounds=self.grid_bounds, request_session=request_session)
         gc.collect()
 
         self.touchscreen_handler = TouchscreenHandler()
@@ -340,7 +340,10 @@ class SkyPortalUI:  # noqa: D101
         self.main_display_group.append(splash_display)
 
     def set_base_map(
-        self, grid_bounds: tuple[float, float, float, float], use_default: bool = USE_DEFAULT_MAP
+        self,
+        grid_bounds: tuple[float, float, float, float],
+        request_session: requests.Session,
+        use_default: bool = USE_DEFAULT_MAP,
     ) -> None:
         """
         Set the base map image on the PyPortal display.
@@ -353,7 +356,7 @@ class SkyPortalUI:  # noqa: D101
             print("Skipping dynamic map tile generation, loading default")
             map_img = displayio.OnDiskBitmap(DEFAULT_BASE_MAP)
         else:
-            map_img = get_base_map(grid_bounds=grid_bounds)
+            map_img = get_base_map(grid_bounds=grid_bounds, request_session=request_session)
 
         map_group = displayio.Group()
         map_sprite = displayio.TileGrid(map_img, pixel_shader=map_img.pixel_shader)
