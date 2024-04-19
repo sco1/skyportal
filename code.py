@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gc
 import math
+import os
 
 from adafruit_datetime import datetime, timedelta
 from adafruit_pyportal import PyPortal
@@ -35,6 +36,14 @@ def _utc_to_local(utc_timestamp: float, utc_offset: str = "-0000") -> datetime:
     return utc_time + delta
 
 
+# Starting with CircuitPython v9.0 an "sd" folder has to be created to be used as a mount point
+# For newer installs this should already be present but may not if migrating from v8.x
+# See: https://github.com/adafruit/circuitpython/issues/8872
+# See: https://github.com/adafruit/circuitpython/pull/8860
+if "sd" not in os.listdir("/"):
+    # Our boot.py already makes the filesystem writeable so we shouldn't need to guard
+    os.mkdir("/sd")
+
 # Device Initialization
 PYPORTAL = PyPortal()  # This also takes care of mounting the SD to /sd
 skyportal_ui = SkyPortalUI()
@@ -42,19 +51,22 @@ skyportal_ui = SkyPortalUI()
 PYPORTAL.network.connect()
 print("Wifi connected")
 
+SESSION = PYPORTAL.network._wifi.requests
+
 # The internal PyPortal query to AIO returns as "%Y-%m-%d %H:%M:%S.%L %j %u %z %Z"
 # This method sets the internal clock, but we also retain it to transform the API time to local
 init_timestamp = PYPORTAL.get_local_time(location=secrets["timezone"])
 utc_offset = init_timestamp.split()[4]
 
 grid_bounds = build_bounding_box()
-skyportal_ui.post_connect_init(grid_bounds)
+skyportal_ui.post_connect_init(grid_bounds, SESSION)
 
 api_handler: APIHandlerBase
 if skyportal_config.AIRCRAFT_DATA_SOURCE == "adsblol":
     from skyportal.networklib import ADSBLol
 
     api_handler = ADSBLol(
+        request_session=SESSION,
         lat=skyportal_config.MAP_CENTER_LAT,
         lon=skyportal_config.MAP_CENTER_LON,
         radius=skyportal_config.GRID_WIDTH_MI * 2,
@@ -63,12 +75,13 @@ if skyportal_config.AIRCRAFT_DATA_SOURCE == "adsblol":
 elif skyportal_config.AIRCRAFT_DATA_SOURCE == "opensky":
     from skyportal.networklib import OpenSky
 
-    api_handler = OpenSky(grid_bounds=grid_bounds)
+    api_handler = OpenSky(request_session=SESSION, grid_bounds=grid_bounds)
     print("Using OpenSky as aircraft data source")
 elif skyportal_config.AIRCRAFT_DATA_SOURCE == "proxy":
     from skyportal.networklib import ProxyAPI
 
     api_handler = ProxyAPI(
+        request_session=SESSION,
         lat=skyportal_config.MAP_CENTER_LAT,
         lon=skyportal_config.MAP_CENTER_LON,
         radius=skyportal_config.GRID_WIDTH_MI * 2,

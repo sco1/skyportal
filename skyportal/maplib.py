@@ -84,7 +84,10 @@ def calculate_pixel_position(
     return x, y
 
 
-def get_base_map(grid_bounds: tuple[float, float, float, float]) -> displayio.OnDiskBitmap:
+def get_base_map(
+    grid_bounds: tuple[float, float, float, float],
+    request_session: requests.Session,
+) -> displayio.OnDiskBitmap:
     """
     Query Geoapify for the base map image.
 
@@ -125,7 +128,7 @@ def get_base_map(grid_bounds: tuple[float, float, float, float]) -> displayio.On
 
     try:
         print("Requesting map tile from Geoapify via AdaIO")
-        r = requests.get(adaIO_query_url)
+        r = request_session.get(adaIO_query_url)
         if r.status_code != 200:
             raise RuntimeError(f"Bad response received from AdaIO: {r.status_code}, {r.text}")
 
