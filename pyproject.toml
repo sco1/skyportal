@@ -1,12 +1,15 @@
-[tool.poetry]
+[project]
 name = "skyportal"
 version = "1.3.0"
-description = "A PyPortal based flight tracker"
-authors = ["sco1 <sco1.git@gmail.com>"]
+description = "A PyPortal based flight tracker."
+authors = [
+    {name = "sco1", email = "sco1.git@gmail.com"}
+]
+maintainers = [
+    {name = "sco1", email = "sco1.git@gmail.com"}
+]
 
 readme = "README.md"
-homepage = "https://github.com/sco1/"
-repository = "https://github.com/sco1/skyportal"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -20,18 +23,27 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.11"
+requires-python = ">=3.11"
+dependencies = []
 
-[tool.poetry.dev-dependencies]
-black = "^24.0"
-bump2version = "^1.0"
-flake8 = "^7.0"
-flake8-annotations = "^3.0"
-isort = "^5.12"
-mypy = "^1.0"
-pre-commit = "^3.0"
-ruff = "^0.5"
+[project.urls]
+Homepage = "https://github.com/sco1/"
+Documentation = "https://github.com/sco1/skyportal/blob/main/README.md"
+Repository = "https://github.com/sco1/skyportal"
+Issues = "https://github.com/sco1/skyportal/issues"
+Changelog = "https://github.com/sco1/skyportal/blob/main/CHANGELOG.md"
+
+[tool.uv]
+dev-dependencies = [
+    "black~=24.8",
+    "bump2version~=1.0",
+    "flake8~=7.1",
+    "flake8-annotations~=3.1",
+    "isort~=5.13",
+    "mypy~=1.11",
+    "pre-commit~=3.8",
+    "ruff~=0.6",
+]
 
 [tool.black]
 line-length = 100
@@ -63,5 +75,5 @@ exclude = ["lib", "adsblol-proxy"]
 reportShadowedImports = false
 
 [build-system]
-requires = ["poetry-core>=1.2"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
