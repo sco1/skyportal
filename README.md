@@ -1,4 +1,8 @@
 # skyportal
+[![GitHub Release](https://img.shields.io/github/v/release/sco1/skyportal)](https://github.com/sco1/skyportal/releases)
+[![GitHub License](https://img.shields.io/github/license/sco1/skyportal?color=magenta)](https://github.com/sco1/skyportal/blob/main/LICENSE)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/sco1/skyportal/main.svg)](https://results.pre-commit.ci/latest/github/sco1/skyportal/main)
+
 A PyPortal based flight tracker powered by [Adafruit](https://io.adafruit.com/), [Geoapify](https://www.geoapify.com/), [ADSB.lol](https://adsb.lol), and [The OpenSky Network](https://opensky-network.org/).
 
 Heavily inspired by Bob Hammell's PyPortal Flight Tracker ([GH](https://github.com/rhammell/pyportal-flight-tracker), [Tutorial](https://www.hackster.io/rhammell/pyportal-flight-tracker-0be6b0#story)).
