@@ -3,7 +3,6 @@ import math
 from collections import OrderedDict
 
 import adafruit_requests as requests
-import board
 import displayio
 
 from secrets import secrets
@@ -15,10 +14,10 @@ MAP_STYLE = "klokantech-basic"
 
 AIO_URL_BASE = f"https://io.adafruit.com/api/v2/{secrets['aio_username']}/integrations/image-formatter"  # noqa: E501
 
-SKYPORTAL_DISPLAY = board.DISPLAY
-
 
 def build_bounding_box(
+    screen_width: int,
+    screen_height: int,
     map_center_lat: float = MAP_CENTER_LAT,
     map_center_lon: float = MAP_CENTER_LON,
     grid_width_mi: int = GRID_WIDTH_MI,
@@ -36,7 +35,7 @@ def build_bounding_box(
     d_lon = math.asin(math.sin(ang_dist) / math.cos(center_lat_rad))
 
     # Scale rectangle height from the specified width
-    aspect_ratio = SKYPORTAL_DISPLAY.width / SKYPORTAL_DISPLAY.height
+    aspect_ratio = screen_width / screen_height
     d_lon *= aspect_ratio
 
     # Calculate latitude bounds
@@ -65,12 +64,14 @@ def calculate_pixel_position(
     lat: float,
     lon: float,
     grid_bounds: tuple[float, float, float, float],
+    screen_width: int,
+    screen_height: int,
 ) -> tuple[int, int]:
     """Map lat/long position to on-screen pixel coordinates."""
     lat_min, lat_max, lon_min, lon_max = grid_bounds
 
     # Calculate x-coordinate
-    x = map_range(lon, lon_min, lon_max, 0, SKYPORTAL_DISPLAY.width)
+    x = map_range(lon, lon_min, lon_max, 0, screen_width)
 
     # Calculate y-coordinate using the Mercator projection
     lat_rad = math.radians(lat)
@@ -79,12 +80,14 @@ def calculate_pixel_position(
     merc_lat = math.log(math.tan(math.pi / 4 + lat_rad / 2))
     merc_max = math.log(math.tan(math.pi / 4 + lat_max_rad / 2))
     merc_min = math.log(math.tan(math.pi / 4 + lat_min_rad / 2))
-    y = map_range(merc_lat, merc_max, merc_min, 0, SKYPORTAL_DISPLAY.height)
+    y = map_range(merc_lat, merc_max, merc_min, 0, screen_height)
 
     return x, y
 
 
 def get_base_map(
+    screen_width: int,
+    screen_height: int,
     grid_bounds: tuple[float, float, float, float],
     request_session: requests.Session,
 ) -> displayio.OnDiskBitmap:
@@ -109,8 +112,8 @@ def get_base_map(
             ("format", "png"),
             ("center", f"lonlat:{MAP_CENTER_LON},{MAP_CENTER_LAT}"),
             ("area", f"rect:{lon_min},{lat_min},{lon_max},{lat_max}"),
-            ("width", SKYPORTAL_DISPLAY.width * 2),
-            ("height", SKYPORTAL_DISPLAY.height * 2),
+            ("width", screen_width * 2),
+            ("height", screen_height * 2),
         ]
     )
     map_query_url = build_url(GEOAPIFY_API_URL_BASE, map_params)
@@ -118,8 +121,8 @@ def get_base_map(
     adaIO_params = OrderedDict(
         [
             ("x-aio-key", secrets["aio_key"]),
-            ("width", SKYPORTAL_DISPLAY.width),
-            ("height", SKYPORTAL_DISPLAY.height),
+            ("width", screen_width),
+            ("height", screen_height),
             ("output", "BMP16"),
             ("url", urlencode(map_query_url)),  # Encode so AdaIO doesn't eat the Geoapify params
         ]
