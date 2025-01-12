@@ -43,11 +43,11 @@ class PyPortal:
 
     @property
     def width(self) -> int:  # noqa: D102
-        return self.display.display.width  # type: ignore[no-any-return]
+        return self.display.width  # type: ignore[no-any-return]
 
     @property
     def height(self) -> int:  # noqa: D102
-        return self.display.display.height  # type: ignore[no-any-return]
+        return self.display.height  # type: ignore[no-any-return]
 
     def get_local_time(self) -> str:
         """
