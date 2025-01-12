@@ -3,8 +3,6 @@ import math
 from collections import namedtuple
 
 import adafruit_requests as requests
-import adafruit_touchscreen
-import board
 import displayio
 import terminalio
 from adafruit_display_shapes.roundrect import RoundRect

@@ -48,6 +48,7 @@ if "sd" not in os.listdir("/"):
 # Written verbosely for now, once initial functionality is achieved then we can look at abstracting
 # away into the hardware handlers
 impl = sys.implementation
+device: PyPortal | FeatherS3
 if "PyPortal" in impl._machine:
     print("Initializing PyPortal")
     from skyportal.pyportal_compat import PyPortal
