@@ -7,6 +7,7 @@ import rtc
 import socketpool
 import wifi
 from adafruit_featherwing import tft_featherwing_35
+from adafruit_touchscreen import map_range
 from adafruit_tsc2007 import TSC2007
 
 from secrets import secrets
@@ -58,7 +59,18 @@ class FeatherS3:
         self._fw = tft_featherwing_35.TFTFeatherWing35V2()
         self.display = self._fw.display
 
-        self.touchscreen = TouchscreenHandler(self._fw.touchscreen)
+        # Default assumes portrait but we're in landscape
+        self._fw.touchscreen.swap_xy = True
+
+        # Plotting origin is assumed to be the top left of the screen
+        # Since xy have been swapped this becomes y
+        self._fw.touchscreen.invert_x = True
+
+        self.touchscreen = TouchscreenHandler(
+            self._fw.touchscreen,
+            screen_width=self.width,
+            screen_height=self.height,
+        )
 
     @property
     def width(self) -> int:  # noqa: D102
@@ -130,13 +142,36 @@ class FeatherS3:
 
 
 class TouchscreenHandler:  # noqa: D101
+    _screen_width: int
+    _screen_height: int
+
+    # Screen calibration information for mapping press location to pixel location
+    _min_x: int = 200
+    _min_y: int = 400
+    _max_x: int = 3800
+    _max_y: int = 3700
+
     _is_pressed: bool
 
-    def __init__(self, touchscreen: TSC2007) -> None:
+    def __init__(self, touchscreen: TSC2007, screen_width: int, screen_height: int) -> None:
         self._touchscreen = touchscreen
+
+        # Because we're not using the adafruit_touchscreen lib here, we need to map press location
+        # to pixel location ourselves
+        self._screen_width = screen_width
+        self._screen_height = screen_height
 
         self._is_pressed = False
         print("Touchscreen initialized")
+
+    def _map_touch(self, touch_point: tuple[int, int]) -> tuple[int, int]:
+        """Map the provided XY touch point to its closest pixel coordinate."""
+        press_x, press_y = touch_point
+
+        mapped_x = int(map_range(press_x, self._min_x, self._max_x, 0, self._screen_width))
+        mapped_y = int(map_range(press_y, self._min_y, self._max_y, 0, self._screen_height))
+
+        return mapped_x, mapped_y
 
     @property
     def touch_point(self) -> tuple[int, int, int] | None:
@@ -157,7 +192,9 @@ class TouchscreenHandler:  # noqa: D101
             else:
                 self._is_pressed = True
 
-                # Downstream consumers expecting a (x, y, pressure) tuple but the TSC2007 gives a
-                # dictionary
                 p = self._touchscreen.touch
-                return (p["x"], p["y"], p["pressure"])
+                print(f"Raw touch {p["x"], p["y"]}")
+                pixel_x, pixel_y = self._map_touch((p["x"], p["y"]))  # Map to pixel coordinate
+
+                # Downstream consumers expecting a (x, y, pressure) tuple
+                return (pixel_x, pixel_y, p["pressure"])
