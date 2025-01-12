@@ -13,9 +13,17 @@ from skyportal.aircraftlib import AircraftIcon, AircraftState, load_aircraft_ico
 from skyportal.maplib import calculate_pixel_position, get_base_map
 from skyportal_config import GEO_ALTITUDE_THRESHOLD_M, SKIP_GROUND, USE_DEFAULT_MAP
 
-# CircuitPython doesn't have the typing module, so throw this away at runtime
+# These modules are only necessary for typing so can be thrown away if not utilized at runtime
 try:
     import typing as t
+
+    from skyportal.feather_compat import FeatherS3
+    from skyportal.pyportal_compat import PyPortal
+
+    # Protocol for SkyPortalUI's display attribute
+    class HasRootGroup(t.Protocol):  # noqa: D101
+        root_group: displayio.Group
+
 except ImportError:
     pass
 
@@ -225,8 +233,8 @@ class AircraftInfoBox:
 
 
 class SkyPortalUI:  # noqa: D101
-    device: ...
-    display: ...
+    device: PyPortal | FeatherS3
+    display: HasRootGroup
 
     main_display_group: displayio.Group
     aircraft_display_group: displayio.Group
@@ -246,7 +254,7 @@ class SkyPortalUI:  # noqa: D101
 
     _aircraft_positions: dict[tuple[int, int], AircraftState]
 
-    def __init__(self, device) -> None:
+    def __init__(self, device: PyPortal | FeatherS3) -> None:
         self.device = device
         self.display = self.device.display
 
