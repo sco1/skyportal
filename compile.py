@@ -1,3 +1,4 @@
+import argparse
 import platform
 import subprocess
 import time
@@ -14,9 +15,19 @@ COMPILERS = {
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("target", type=str, choices=("pyportal", "feather"))
+    args = parser.parse_args()
+
     DEST_DIR.mkdir(parents=True, exist_ok=True)
 
-    to_compile = list(SOURCE_DIR.glob("*.py"))
+    # Remove unnecessary compatibility layer
+    to_compile = set(SOURCE_DIR.glob("*.py"))
+    if args.target == "pyportal":
+        to_compile.remove(SOURCE_DIR / "feather_compat.py")
+    elif args.target == "feather":
+        to_compile.remove(SOURCE_DIR / "pyportal_compat.py")
+
     print(f"Found {len(to_compile)} *.py files to compile")
     for filepath in to_compile:
         subprocess.run([COMPILERS[platform.system()], filepath])
