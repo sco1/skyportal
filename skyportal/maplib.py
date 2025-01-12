@@ -98,10 +98,10 @@ def get_base_map(
     specified mapping constants. If any part of this process fails, the device will fall back to
     loading the default map tile saved onboard.
 
-    Since Geoapify returns a PNG & PyPortal needs a BMP, this image is sent to Adafruit IO for
+    Since Geoapify returns a PNG & CircuitPython needs a BMP, this image is sent to Adafruit IO for
     resizing & conversion.
 
-    NOTE: The request sent to Geoapify specifies an image size 2x that of the PyPortal display to
+    NOTE: The request sent to Geoapify specifies an image size 2x that of the display in order to
     shrink down the labels on the final image for better visualization.
     """
     lat_min, lat_max, lon_min, lon_max = grid_bounds

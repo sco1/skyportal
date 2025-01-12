@@ -3,7 +3,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (`<ma
 
 ## [v2.0.0]
 ### Added
-* #36 Added support for the FeatherS3 + TFT FeatherWing V2 w/TSC2007
+* #36 Add support for the FeatherS3 + TFT FeatherWing V2 w/TSC2007
+* #24 Add map tile generation CLI helper utility, `map_gen`
 
 ### Changed
 * Bump supported CircuitPython to v9.2.x only

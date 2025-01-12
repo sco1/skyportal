@@ -33,14 +33,19 @@ Repository = "https://github.com/sco1/skyportal"
 Issues = "https://github.com/sco1/skyportal/issues"
 Changelog = "https://github.com/sco1/skyportal/blob/main/CHANGELOG.md"
 
+[project.scripts]
+map_gen = "utils.build_map_tile:main"
+
 [tool.uv]
 dev-dependencies = [
     "black~=24.8",
     "flake8~=7.1",
     "flake8-annotations~=3.1",
+    "httpx~=0.28",
     "isort~=5.13",
     "mypy~=1.11",
     "pre-commit~=4.0",
+    "python-dotenv~=1.0",
     "ruff~=0.6",
     "sco1-bumper~=1.0",
 ]
