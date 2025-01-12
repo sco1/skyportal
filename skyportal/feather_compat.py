@@ -48,15 +48,15 @@ class FeatherS3:
             * Initialize the touchscreen handler
         """
         self.tz = tz
+        self.connect()
 
-        # Initialize display so we can see what's happening
+        # I'm not sure why at the moment, but setting the RTC needs to be before the display is
+        # initialized otherwise it gets stuck on a white screen
+        self._set_rtc_from_timestr(self.get_local_time())
+
         # This should also attempt to mount the SD card
         self._fw = tft_featherwing_35.TFTFeatherWing35V2()
         self.display = self._fw.display
-
-        self.connect()
-
-        self._set_rtc_from_timestr(self.get_local_time())
 
         self.touchscreen = TouchscreenHandler(self._fw.touchscreen)
 
