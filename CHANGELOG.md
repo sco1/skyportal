@@ -1,6 +1,17 @@
 # Changelog
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (`<major>`.`<minor>`.`<patch>`)
 
+## [v2.0.0]
+### Added
+* #36 Add support for the FeatherS3 + TFT FeatherWing V2 w/TSC2007
+* #24 Add map tile generation CLI helper utility, `map_gen`
+
+### Changed
+* Bump supported CircuitPython to v9.2.x only
+* Bump vendored libraries to v9.2 compatible `*.mpy` files
+* #36 (Internal) Refactor hardware interfaces into hardware-specific compatibility layers
+* #28 Update vendored `mpy-cross` binaries to CircuitPython v9.2
+
 ## [v1.3.0]
 ### Changed
 * #20 Bump supported CircuitPython to v9.x only

@@ -19,36 +19,85 @@ jobs:
       with:
         python-version-file: "pyproject.toml"
 
-    - name: Compile skyportal lib
-      run: |
-        python ./compile.py
-
     - name: Build base bundle
       run: |
         tar -cvf bundle_base.tar \
-          ./assets/*             \
-          ./lib/*                \
           ./boot.py              \
           ./code.py              \
-          ./pyportal_startup.bmp \
-          ./pyportal_startup.wav \
           ./secrets.py           \
           ./skyportal_config.py
 
-    - name: Create non-compiled bundle
+    - name: Build PyPortal bundle base
       run: |
-        cp bundle_base.tar skyportal_bundle.tar
-        tar -rvf skyportal_bundle.tar ./skyportal/*
-        gzip skyportal_bundle.tar
+        mkdir -p ./tmp/assets
+        cp ./assets/* ./tmp/assets
+        cp ./tmp/assets/default_map_pyportal.bmp ./tmp/assets/default_map.bmp
+        rm ./tmp/assets/default_map_*.bmp
 
-    - name: Create compiled bundle
+        mkdir -p ./tmp/lib
+        cp -r ./lib_by_platform/pyportal/lib/* ./tmp/lib
+
+        cp ./pyportal_startup.bmp .
+        cp ./pyportal_startup.wav .
+
+        cp bundle_base.tar pyportal_bundle_base.tar
+        tar -rvf pyportal_bundle_base.tar -C ./tmp/ .
+
+    - name: Create non-compiled PyPortal bundle
       run: |
-        cp bundle_base.tar skyportal_bundle_compiled.tar
-        tar -rvf skyportal_bundle_compiled.tar -C ./dist/ .
-        gzip skyportal_bundle_compiled.tar
+        cp pyportal_bundle_base.tar skyportal_bundle_pyportal.tar
+        tar -rvf skyportal_bundle_pyportal.tar ./skyportal/*
+        tar -vf skyportal_bundle_pyportal.tar --delete ./skyportal/feather_compat.py
+        gzip skyportal_bundle_pyportal.tar
+
+    - name: Compile skyportal lib for PyPortal
+      run: |
+        python ./compile.py pyportal
+
+    - name: Create compiled PyPortal bundle
+      run: |
+        cp pyportal_bundle_base.tar skyportal_bundle_pyportal_compiled.tar
+        tar -rvf skyportal_bundle_pyportal_compiled.tar -C ./dist/ .
+        gzip skyportal_bundle_pyportal_compiled.tar
+
+    - name: PyPortal Cleanup
+      run: |
+        rm -rf ./tmp
+        rm -rf ./dist
+        rm -f pyportal_bundle_base.tar
+
+    - name: Build Feather bundle base
+      run: |
+        mkdir -p ./tmp/assets
+        cp ./assets/* ./tmp/assets
+        cp ./tmp/assets/default_map_featherS3.bmp ./tmp/assets/default_map.bmp
+        rm ./tmp/assets/default_map_*.bmp
+
+        mkdir -p ./tmp/lib
+        cp -r ./lib_by_platform/featherS3/lib/* ./tmp/lib
+
+        cp bundle_base.tar feather_bundle_base.tar
+        tar -rvf feather_bundle_base.tar -C ./tmp/ .
+
+    - name: Create non-compiled FeatherS3 bundle
+      run: |
+        cp feather_bundle_base.tar skyportal_bundle_feather.tar
+        tar -rvf skyportal_bundle_feather.tar ./skyportal/*
+        tar -vf skyportal_bundle_feather.tar --delete ./skyportal/pyportal_compat.py
+        gzip skyportal_bundle_feather.tar
+
+    - name: Compile skyportal lib for FeatherS3
+      run: |
+        python ./compile.py feather
+
+    - name: Create compiled FeatherS3 bundle
+      run: |
+        cp feather_bundle_base.tar skyportal_bundle_feather_compiled.tar
+        tar -rvf skyportal_bundle_feather_compiled.tar -C ./dist/ .
+        gzip skyportal_bundle_feather_compiled.tar
 
     - name: Upload artifacts
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run:
-        gh release upload ${{ github.event.release.tag_name }} skyportal_bundle.tar.gz skyportal_bundle_compiled.tar.gz
+        gh release upload ${{ github.event.release.tag_name }} skyportal_bundle_*.tar.gz

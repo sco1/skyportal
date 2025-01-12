@@ -3,7 +3,7 @@
 [![GitHub License](https://img.shields.io/github/license/sco1/skyportal?color=magenta)](https://github.com/sco1/skyportal/blob/main/LICENSE)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/sco1/skyportal/main.svg)](https://results.pre-commit.ci/latest/github/sco1/skyportal/main)
 
-A PyPortal based flight tracker powered by [Adafruit](https://io.adafruit.com/), [Geoapify](https://www.geoapify.com/), [ADSB.lol](https://adsb.lol), and [The OpenSky Network](https://opensky-network.org/).
+A CircuitPython based flight tracker powered by [Adafruit](https://io.adafruit.com/), [Geoapify](https://www.geoapify.com/), [ADSB.lol](https://adsb.lol), and [The OpenSky Network](https://opensky-network.org/).
 
 Heavily inspired by Bob Hammell's PyPortal Flight Tracker ([GH](https://github.com/rhammell/pyportal-flight-tracker), [Tutorial](https://www.hackster.io/rhammell/pyportal-flight-tracker-0be6b0#story)).
 
@@ -11,8 +11,13 @@ Thank you to [markleoart](https://www.fiverr.com/markleoart) for creating the ai
 
 ![screenshot1](./doc/screenie.bmp "SkyPortal in action") ![screenshot2](./doc/screenie_with_info.bmp "SkyPortal in action, with aircraft popup")
 
+## Supported Hardware Configurations
+Compatibilty is guaranteed for the following hardware configurations:
+* [Adafruit PyPortal](https://www.adafruit.com/product/4116)
+* [FeatherS3](https://www.adafruit.com/product/5399) + [FeatherWing V2 w/TSC2007](https://www.adafruit.com/product/3651)
+
 ## Getting Started
-Users are assumed have read through [Adafruit's PyPortal learning guide](https://learn.adafruit.com/adafruit-pyportal). CircuitPython v9.0 is currently in use for this repository, no other versions are evaluated & reverse compatibility is not guaranteed.
+Users are assumed have read through [Adafruit's PyPortal learning guide](https://learn.adafruit.com/adafruit-pyportal). CircuitPython v9.2 is currently in use for this repository, no other versions are evaluated & reverse compatibility is not guaranteed.
 
 The CircuitPython libraries in `lib` are sourced from the Official and Community bundles, which can be found on the [CircuitPython libraries page](https://learn.adafruit.com/adafruit-pyportal). Compatibility for a given SkyPortal release is only ensured with library files vendored by this repository.
 
@@ -24,7 +29,7 @@ To get up and running, copy the following files from the repository to your PyPo
 
 ```
 assets/
-lib/
+lib/<your hardware configuration>/lib
 skyportal/
 boot.py
 code.py
@@ -34,8 +39,12 @@ secrets.py
 skyportal_config.py
 ```
 
+**NOTE:** As of Skyportal v2.0 there are some hardware-specific file configurations that need to be adjusted for proper functionality:
+* The sample default map tile provided by the repository is marked with a hardware suffix (screen pixel sizes differ). If using the sample map tile, rename the hardware-appropriate `*.bmp` file to `default_map.bmp` and delete the other tile. This does not have an effect if querying Geoapify for the map tile, though this default map is used as the fallback if this query fails.
+* The bundled CircuitPython libraries are separated by hardware type, copy the **nested** `lib` file for your hardware configuration to the root of your device.
+
 #### From GH Release
-The Skyportal [Releases page](https://github.com/sco1/skyportal/releases) contains bundled `*.tar.gz` archives, built in CI, that can be downloaded and extracted directly onto the device. Bundles come in two flavors: one pure-python implementation and a compiled version, where the `skyportal` library has been [compiled to `*.mpy`](https://learn.adafruit.com/welcome-to-circuitpython/library-file-types-and-frozen-libraries#dot-mpy-library-files-3117643) and added to `lib/`.
+The Skyportal [Releases page](https://github.com/sco1/skyportal/releases) contains bundled `*.tar.gz` archives, built in CI, that can be downloaded and extracted directly onto the device. Bundles are available for each supported hardware configuration and come in two flavors: a pure-python implementation and a compiled version, where the `skyportal` library has been [compiled to `*.mpy`](https://learn.adafruit.com/welcome-to-circuitpython/library-file-types-and-frozen-libraries#dot-mpy-library-files-3117643) and added to `lib/`.
 
 ### Configuration
 #### Secrets
@@ -120,3 +129,5 @@ Tapping on an aircraft icon will display state information for the aircraft clos
 
 ## Known Limitations
 The PyPortal is a highly memory constrained environment, which presents challenges when aiming to create a highly expressive UI. While every attempt is being made to minimize memory usage to keep the Skyportal functioning, the device may occasionally run out of memory. The most likely point for this to happen is when receiving the web request with aircraft state information from your API of choice. Depending on how congested your selected airspace is at query time, there may simply be too much information provided by the API for the device to handle & I've intentionally left the exception unhandled so it will crash the device. Should you find this ocurring often, you may be interested in setting up a proxy server to return only the information needed for the device to function, which can significantly alleviate the amount of RAM needed. See [Proxy API](#proxy-api---proxy) for more information.
+
+Depending on board configuration, the FeatherS3 typically has more RAM avilable to accomodate these web requests, so Skyportal v2.0 expands functionality to serve this board type.
