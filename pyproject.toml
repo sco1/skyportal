@@ -1,7 +1,7 @@
 [project]
 name = "skyportal"
-version = "1.3.0"
-description = "A PyPortal based flight tracker."
+version = "2.0.0"
+description = "A CircuitPython based flight tracker."
 authors = [
     {name = "sco1", email = "sco1.git@gmail.com"}
 ]
@@ -17,13 +17,13 @@ classifiers = [
     "Operating System :: Other OS",
     "Programming Language :: Python :: Implementation :: MicroPython",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Visualization",
     "Typing :: Typed",
 ]
 
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = []
 
 [project.urls]
@@ -33,16 +33,21 @@ Repository = "https://github.com/sco1/skyportal"
 Issues = "https://github.com/sco1/skyportal/issues"
 Changelog = "https://github.com/sco1/skyportal/blob/main/CHANGELOG.md"
 
+[project.scripts]
+map_gen = "utils.build_map_tile:main"
+
 [tool.uv]
 dev-dependencies = [
-    "black~=24.8",
-    "bump2version~=1.0",
+    "black~=25.0",
     "flake8~=7.1",
     "flake8-annotations~=3.1",
-    "isort~=5.13",
+    "httpx~=0.28",
+    "isort~=6.0",
     "mypy~=1.11",
     "pre-commit~=4.0",
+    "python-dotenv~=1.0",
     "ruff~=0.6",
+    "sco1-bumper~=1.0",
 ]
 
 [tool.black]

@@ -3,9 +3,9 @@ from __future__ import annotations
 import gc
 import math
 import os
+import sys
 
 from adafruit_datetime import datetime, timedelta
-from adafruit_pyportal import PyPortal
 
 from skyportal.displaylib import SkyPortalUI
 from skyportal.maplib import build_bounding_box
@@ -45,28 +45,33 @@ if "sd" not in os.listdir("/"):
     os.mkdir("/sd")
 
 # Device Initialization
-PYPORTAL = PyPortal()  # This also takes care of mounting the SD to /sd
-skyportal_ui = SkyPortalUI()
+# Written verbosely for now, once initial functionality is achieved then we can look at abstracting
+# away into the hardware handlers
+impl = sys.implementation
+device: PyPortal | FeatherS3
+if "PyPortal" in impl._machine:
+    print("Initializing PyPortal")
+    from skyportal.pyportal_compat import PyPortal
 
-PYPORTAL.network.connect()
-print("Wifi connected")
+    device = PyPortal(tz=secrets["timezone"])
+elif "FeatherS3" in impl._machine:
+    print("Initializing FeatherS3")
+    from skyportal.feather_compat import FeatherS3
 
-SESSION = PYPORTAL.network._wifi.requests
+    device = FeatherS3(tz=secrets["timezone"])
+else:
+    raise RuntimeError("Unknown machine type: '{impl._machine}'")
 
-# The internal PyPortal query to AIO returns as "%Y-%m-%d %H:%M:%S.%L %j %u %z %Z"
-# This method sets the internal clock, but we also retain it to transform the API time to local
-init_timestamp = PYPORTAL.get_local_time(location=secrets["timezone"])
-utc_offset = init_timestamp.split()[4]
-
-grid_bounds = build_bounding_box()
-skyportal_ui.post_connect_init(grid_bounds, SESSION)
+skyportal_ui = SkyPortalUI(device)
+grid_bounds = build_bounding_box(screen_width=device.width, screen_height=device.height)
+skyportal_ui.post_connect_init(grid_bounds)
 
 api_handler: APIHandlerBase
 if skyportal_config.AIRCRAFT_DATA_SOURCE == "adsblol":
     from skyportal.networklib import ADSBLol
 
     api_handler = ADSBLol(
-        request_session=SESSION,
+        request_session=device.session,
         lat=skyportal_config.MAP_CENTER_LAT,
         lon=skyportal_config.MAP_CENTER_LON,
         radius=skyportal_config.GRID_WIDTH_MI * 2,
@@ -75,13 +80,13 @@ if skyportal_config.AIRCRAFT_DATA_SOURCE == "adsblol":
 elif skyportal_config.AIRCRAFT_DATA_SOURCE == "opensky":
     from skyportal.networklib import OpenSky
 
-    api_handler = OpenSky(request_session=SESSION, grid_bounds=grid_bounds)
+    api_handler = OpenSky(request_session=device.session, grid_bounds=grid_bounds)
     print("Using OpenSky as aircraft data source")
 elif skyportal_config.AIRCRAFT_DATA_SOURCE == "proxy":
     from skyportal.networklib import ProxyAPI
 
     api_handler = ProxyAPI(
-        request_session=SESSION,
+        request_session=device.session,
         lat=skyportal_config.MAP_CENTER_LAT,
         lon=skyportal_config.MAP_CENTER_LON,
         radius=skyportal_config.GRID_WIDTH_MI * 2,
@@ -109,7 +114,9 @@ while True:
         if api_handler.can_draw:
             print("Updating aircraft locations")
             skyportal_ui.draw_aircraft(api_handler.aircraft)
-            skyportal_ui.time_label.text = f"{_utc_to_local(api_handler.api_time, utc_offset)}"
+
+            local_time_str = _utc_to_local(api_handler.api_time, device.utc_offset)
+            skyportal_ui.time_label.text = f"{local_time_str}"
         else:
             print("No aircraft to draw, skipping redraw")
 

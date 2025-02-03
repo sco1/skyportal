@@ -3,8 +3,6 @@ import math
 from collections import namedtuple
 
 import adafruit_requests as requests
-import adafruit_touchscreen
-import board
 import displayio
 import terminalio
 from adafruit_display_shapes.roundrect import RoundRect
@@ -15,58 +13,25 @@ from skyportal.aircraftlib import AircraftIcon, AircraftState, load_aircraft_ico
 from skyportal.maplib import calculate_pixel_position, get_base_map
 from skyportal_config import GEO_ALTITUDE_THRESHOLD_M, SKIP_GROUND, USE_DEFAULT_MAP
 
-# CircuitPython doesn't have the typing module, so throw this away at runtime
+# These modules are only necessary for typing so can be thrown away if not utilized at runtime
 try:
     import typing as t
+
+    from skyportal.feather_compat import FeatherS3
+    from skyportal.pyportal_compat import PyPortal
+
+    # Protocol for SkyPortalUI's display attribute
+    class HasRootGroup(t.Protocol):  # noqa: D101
+        root_group: displayio.Group
+
 except ImportError:
     pass
 
-
-SKYPORTAL_DISPLAY = board.DISPLAY
 
 SPLASH = "./assets/splash.bmp"
 DEFAULT_BASE_MAP = "./assets/default_map.bmp"
 GREEN_DOT = "./assets/green_dot.bmp"
 RED_DOT = "./assets/red_dot.bmp"
-
-
-class TouchscreenHandler:  # noqa: D101
-    _touchscreen: adafruit_touchscreen.Touchscreen
-
-    _is_pressed: bool
-
-    def __init__(self) -> None:
-        self._touchscreen = adafruit_touchscreen.Touchscreen(
-            x1_pin=board.TOUCH_XL,
-            x2_pin=board.TOUCH_XR,
-            y1_pin=board.TOUCH_YD,
-            y2_pin=board.TOUCH_YU,
-            calibration=((5200, 59000), (5800, 57000)),
-            size=(SKYPORTAL_DISPLAY.width, SKYPORTAL_DISPLAY.height),
-        )
-        self._is_pressed = False
-
-        print("Touchscreen initialized")
-
-    @property
-    def touch_point(self) -> tuple[int, int, int] | None:
-        """
-        Helper layer to handle "debouncing" of touch screen inputs.
-
-        An attempt is made to discard all touch inputs after the initial input until the finger is
-        lifted from the screen. Due to the polling speed of the device, some inputs may still sneak
-        through before the state change can be recognized.
-        """
-        if self._touchscreen.touch_point is None:
-            if self._is_pressed:
-                self._is_pressed = False
-            return None
-        else:
-            if self._is_pressed:
-                return None
-            else:
-                self._is_pressed = True
-                return self._touchscreen.touch_point  # type: ignore[no-any-return]
 
 
 class ImageButton:
@@ -145,12 +110,12 @@ class AircraftInfoBox:
     _heading: label.Label
     _groundspeed: label.Label
 
-    def __init__(self) -> None:
+    def __init__(self, screen_width: int, screen_height: int) -> None:
         gc.collect()
 
         self.aircraft_info_group = displayio.Group(
-            x=((SKYPORTAL_DISPLAY.width - self._width) // 2),
-            y=((SKYPORTAL_DISPLAY.height - self._height) // 2),
+            x=((screen_width - self._width) // 2),
+            y=((screen_height - self._height) // 2),
         )
         self.aircraft_info_group.hidden = True
 
@@ -268,6 +233,9 @@ class AircraftInfoBox:
 
 
 class SkyPortalUI:  # noqa: D101
+    device: PyPortal | FeatherS3
+    display: HasRootGroup
+
     main_display_group: displayio.Group
     aircraft_display_group: displayio.Group
     time_label_group: displayio.Group
@@ -280,38 +248,40 @@ class SkyPortalUI:  # noqa: D101
 
     auxiliary_button_group: dict[bool, ImageButton]
 
-    touchscreen_handler: TouchscreenHandler
-
     aircraft_info: AircraftInfoBox
 
     grid_bounds: tuple[float, float, float, float]
 
     _aircraft_positions: dict[tuple[int, int], AircraftState]
 
-    def __init__(self) -> None:
+    def __init__(self, device: PyPortal | FeatherS3) -> None:
+        self.device = device
+        self.display = self.device.display
+
         # Set up main display element
         self.main_display_group = displayio.Group()
         self.aircraft_display_group = displayio.Group()
         self.time_label_group = displayio.Group()
         self.status_icon_group = displayio.Group()
 
-        SKYPORTAL_DISPLAY.root_group = self.main_display_group
+        self.display.root_group = self.main_display_group
         self._build_splash()
         self._aircraft_positions = {}
 
     def post_connect_init(
         self,
         grid_bounds: tuple[float, float, float, float],
-        request_session: requests.Session,
     ) -> None:
         """Execute initialization task(s)y that are dependent on an internet connection."""
         # Grab the base map first since it's heavily memory dependent
         self.grid_bounds = grid_bounds
-        self.set_base_map(grid_bounds=self.grid_bounds, request_session=request_session)
+        self.set_base_map(grid_bounds=self.grid_bounds, request_session=self.device.session)
         gc.collect()
 
-        self.touchscreen_handler = TouchscreenHandler()
-        self.aircraft_info = AircraftInfoBox()
+        self.touchscreen_handler = self.device.touchscreen
+        self.aircraft_info = AircraftInfoBox(
+            screen_width=self.device.width, screen_height=self.device.height
+        )
         gc.collect()
 
         # Not internet dependent, but dependent on the base map
@@ -332,7 +302,7 @@ class SkyPortalUI:  # noqa: D101
             color=0xFFFFFF,
             text="Initializing...",
             anchor_point=(0.5, 0.5),
-            anchored_position=(SKYPORTAL_DISPLAY.width / 2, SKYPORTAL_DISPLAY.height * 0.9),
+            anchored_position=(self.display.width / 2, self.display.height * 0.9),
             save_text=False,
         )
 
@@ -356,7 +326,12 @@ class SkyPortalUI:  # noqa: D101
             print("Skipping dynamic map tile generation, loading default")
             map_img = displayio.OnDiskBitmap(DEFAULT_BASE_MAP)
         else:
-            map_img = get_base_map(grid_bounds=grid_bounds, request_session=request_session)
+            map_img = get_base_map(
+                screen_width=self.device.width,
+                screen_height=self.device.height,
+                grid_bounds=grid_bounds,
+                request_session=request_session,
+            )
 
         map_group = displayio.Group()
         map_sprite = displayio.TileGrid(map_img, pixel_shader=map_img.pixel_shader)
@@ -384,8 +359,8 @@ class SkyPortalUI:  # noqa: D101
         self.main_display_group.append(self.time_label_group)
 
     def _add_status_buttons(self) -> None:
-        screen_enabled = ImageButton(GREEN_DOT, y=(SKYPORTAL_DISPLAY.height - 15))
-        screen_disabled = ImageButton(RED_DOT, y=(SKYPORTAL_DISPLAY.height - 15))
+        screen_enabled = ImageButton(GREEN_DOT, y=(self.display.height - 15))
+        screen_disabled = ImageButton(RED_DOT, y=(self.display.height - 15))
         screen_disabled.show(False)
 
         self.auxiliary_button_group = {True: screen_enabled, False: screen_disabled}
@@ -431,11 +406,13 @@ class SkyPortalUI:  # noqa: D101
                 lat=ap.lat,  # type: ignore[arg-type]
                 lon=ap.lon,  # type: ignore[arg-type]
                 grid_bounds=self.grid_bounds,
+                screen_width=self.device.width,
+                screen_height=self.device.height,
             )
 
             # Don't plot if the icon won't appear on screen
-            x_off = icon_x > (SKYPORTAL_DISPLAY.width + self.base_icon.TILE_SIZE)
-            y_off = icon_y > (SKYPORTAL_DISPLAY.height + self.base_icon.TILE_SIZE)
+            x_off = icon_x > (self.display.width + self.base_icon.TILE_SIZE)
+            y_off = icon_y > (self.display.height + self.base_icon.TILE_SIZE)
             if x_off or y_off:
                 n_offscreen += 1
                 continue
