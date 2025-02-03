@@ -38,11 +38,11 @@ map_gen = "utils.build_map_tile:main"
 
 [tool.uv]
 dev-dependencies = [
-    "black~=24.8",
+    "black~=25.0",
     "flake8~=7.1",
     "flake8-annotations~=3.1",
     "httpx~=0.28",
-    "isort~=5.13",
+    "isort~=6.0",
     "mypy~=1.11",
     "pre-commit~=4.0",
     "python-dotenv~=1.0",
