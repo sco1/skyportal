@@ -37,8 +37,8 @@ jobs:
         mkdir -p ./tmp/lib
         cp -r ./lib_by_platform/pyportal/lib/* ./tmp/lib
 
-        cp ./pyportal_startup.bmp .
-        cp ./pyportal_startup.wav .
+        cp ./pyportal_startup.bmp ./tmp/
+        cp ./pyportal_startup.wav ./tmp/
 
         cp bundle_base.tar pyportal_bundle_base.tar
         tar -rvf pyportal_bundle_base.tar -C ./tmp/ .

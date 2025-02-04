@@ -1,7 +1,6 @@
 import argparse
 import platform
 import subprocess
-import time
 from pathlib import Path
 
 SOURCE_DIR = Path("./skyportal")
@@ -31,8 +30,6 @@ if __name__ == "__main__":
     print(f"Found {len(to_compile)} *.py files to compile")
     for filepath in to_compile:
         subprocess.run([COMPILERS[platform.system()], filepath])
-
-    time.sleep(1)  # Lazy wait for subprocesses to finish
 
     compiled = list(SOURCE_DIR.glob("*.mpy"))
     if len(compiled) != len(to_compile):
