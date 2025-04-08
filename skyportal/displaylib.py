@@ -494,4 +494,4 @@ def dist(p: tuple[int, int], q: tuple[int, int]) -> float:
     Taken from https://docs.python.org/3/library/math.html#math.dist since CircuitPython's `math`
     library doesn't have this yet.
     """
-    return math.sqrt(sum((px - qx) ** 2.0 for px, qx in zip(p, q)))
+    return math.sqrt(sum((px - qx) ** 2.0 for px, qx in zip(p, q, strict=False)))
