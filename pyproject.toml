@@ -2,10 +2,9 @@
 name = "skyportal"
 version = "2.0.0"
 description = "A CircuitPython based flight tracker."
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
-    {name = "sco1", email = "sco1.git@gmail.com"}
-]
-maintainers = [
     {name = "sco1", email = "sco1.git@gmail.com"}
 ]
 
@@ -13,7 +12,6 @@ readme = "README.md"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: Other OS",
     "Programming Language :: Python :: Implementation :: MicroPython",
     "Programming Language :: Python :: 3 :: Only",
@@ -29,7 +27,7 @@ dependencies = []
 [project.urls]
 Homepage = "https://github.com/sco1/"
 Documentation = "https://github.com/sco1/skyportal/blob/main/README.md"
-Repository = "https://github.com/sco1/skyportal"
+Repository = "https://github.com/sco1/skyportal.git"
 Issues = "https://github.com/sco1/skyportal/issues"
 Changelog = "https://github.com/sco1/skyportal/blob/main/CHANGELOG.md"
 
