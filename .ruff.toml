@@ -9,11 +9,14 @@ extend-exclude = [
 
 [lint]
 select = [
-    "B",  # flake8-bugbear
-    "C4",  # flake8-comprehensions
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "D",    # pydocstyle/flake8-docstrings
+    "E",    # pycodestyle
+    "F",    # Pyflakes
     "FIX",  # flake8-fixme
-    "D",  # pydocstyle/flake8-docstrings
-    "N",  # pep8-naming
+    "N",    # pep8-naming
+    "W",    # pycodestyle
 ]
 
 ignore = [
@@ -47,4 +50,9 @@ ignore = [
     "N802",
     "N806",
     "N815",
+]
+
+[lint.per-file-ignores]
+"skyportal/networklib.py" = [
+    "E731",
 ]
