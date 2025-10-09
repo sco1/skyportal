@@ -17,6 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Visualization",
     "Typing :: Typed",
 ]
@@ -34,11 +35,12 @@ Changelog = "https://github.com/sco1/skyportal/blob/main/CHANGELOG.md"
 [project.scripts]
 map_gen = "utils.build_map_tile:main"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "black~=25.0",
     "flake8~=7.1",
     "flake8-annotations~=3.1",
+    "flake8-define-class-attributes~=0.2",
     "httpx~=0.28",
     "isort~=6.0",
     "mypy~=1.11",
@@ -60,11 +62,15 @@ profile = "black"
 line_length = 100
 extend_skip = "lib"
 
+[tool.pyright]
+reportShadowedImports = false
+
 [tool.mypy]
 disallow_incomplete_defs = true
 disallow_untyped_calls = true
 disallow_untyped_decorators = true
 disallow_untyped_defs = true
+enable_error_code = "exhaustive-match"
 ignore_missing_imports = true
 no_implicit_optional = true
 show_error_codes = true
@@ -74,9 +80,10 @@ warn_unused_configs = true
 warn_unused_ignores = true
 exclude = ["lib", "adsblol-proxy"]
 
-[tool.pyright]
-reportShadowedImports = false
+[tool.uv.build-backend]
+module-name = "skyportal"
+module-root = ""
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build"]
+build-backend = "uv_build"
