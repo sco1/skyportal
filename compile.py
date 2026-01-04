@@ -7,9 +7,9 @@ SOURCE_DIR = Path("./skyportal")
 DEST_DIR = Path("./dist/lib/skyportal")
 
 COMPILERS = {
-    "Windows": Path("./mpy-cross/mpy-cross-windows-9.2.2.static.exe"),
-    "Linux": Path("./mpy-cross/mpy-cross-linux-amd64-9.2.2.static"),
-    "Darwin": Path("./mpy-cross/mpy-cross-macos-9.2.2-arm64"),
+    "Windows": Path("./mpy-cross/mpy-cross-windows-10.0.3.static.exe"),
+    "Linux": Path("./mpy-cross/mpy-cross-linux-amd64-10.0.3.static"),
+    "Darwin": Path("./mpy-cross/mpy-cross-macos-10.0.3-arm64"),
 }
 
 
