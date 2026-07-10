@@ -35,6 +35,8 @@ class FeatherS3:
         * `width` & `height` pixel screen size properties
     """
 
+    session: adafruit_requests.Session
+
     def __init__(self, tz: str) -> None:
         """
         Initialize the FeatherS3 + TFT FeatherWing V2 w/TSC2007.

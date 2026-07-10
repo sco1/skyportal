@@ -18,6 +18,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Topic :: Scientific/Engineering :: Visualization",
     "Typing :: Typed",
 ]
@@ -37,13 +38,13 @@ map_gen = "utils.build_map_tile:main"
 
 [dependency-groups]
 dev = [
-    "black~=25.0",
+    "black~=26.5",
     "flake8~=7.1",
     "flake8-annotations~=3.1",
     "flake8-define-class-attributes~=0.2",
     "httpx~=0.28",
-    "isort~=7.0",
-    "mypy~=1.11",
+    "isort~=8.0",
+    "mypy~=2.2",
     "pre-commit~=4.0",
     "python-dotenv~=1.0",
     "ruff~=0.6",
@@ -85,5 +86,5 @@ module-name = "skyportal"
 module-root = ""
 
 [build-system]
-requires = ["uv_build"]
+requires = ["uv_build>=0.11.26,<0.12"]
 build-backend = "uv_build"
