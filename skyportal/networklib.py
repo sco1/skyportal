@@ -1,8 +1,7 @@
 import gc
 
 import adafruit_requests as requests
-from adafruit_datetime import timedelta
-from circuitpython_base64 import b64encode
+from adafruit_datetime import datetime, timedelta
 
 import skyportal_config
 from secrets import secrets
@@ -112,6 +111,56 @@ class APIHandlerBase:  # noqa: D101
         print(f"Found {len(self.aircraft)} aircraft")
 
 
+class OpenSkyTokenManager:
+    """
+    Token manager for the OpenSky API Oauth2 client credentials flow.
+
+    See: https://openskynetwork.github.io/opensky-api/rest.html#authentication
+    Adapted: https://openskynetwork.github.io/opensky-api/rest.html#python-token-manager-example
+    """
+
+    _token_url = (
+        "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
+    )
+    _token_refresh_margin = timedelta(seconds=30)  # Seconds before expiry to proactively refresh
+
+    def __init__(self, session: requests.Session) -> None:
+        self.session = session
+
+        self.token: str | None = None
+        self.expires_at: datetime | None = None
+
+    def get_token(self) -> str:
+        """Retrieve a valid access token, refreshing if needed."""
+        if (self.token and self.expires_at) and (datetime.now() < self.expires_at):
+            return self.token
+
+        return self._refresh()
+
+    def _refresh(self) -> str:
+        r = self.session.post(
+            self._token_url,
+            data={
+                "grant_type": "client_credentials",
+                "client_id": secrets["opensky_id"],
+                "client_secret": secrets["opensky_secret"],
+            },
+        )
+
+        data = r.json()
+        self.token = data["access_token"]
+        expires_in = data.get("expires_in", 1800)
+        self.expires_at = (
+            datetime.now() + timedelta(seconds=expires_in) - self._token_refresh_margin
+        )
+
+        return self.token
+
+    def headers(self) -> dict[str, str]:
+        """Build request header with a valid bearer token."""
+        return {"Authorization": f"Bearer {self.get_token()}"}
+
+
 class OpenSky(APIHandlerBase):
     """
     OpenSky Network API handler.
@@ -122,6 +171,7 @@ class OpenSky(APIHandlerBase):
 
     _name = "OpenSky"
     _api_url_base = "https://opensky-network.org/api/states/all"
+    _token_manager: OpenSkyTokenManager
 
     _api_time_key = "time"
     _aircraft_key = "states"
@@ -133,6 +183,8 @@ class OpenSky(APIHandlerBase):
         self._url, self._header = self._build_request(*grid_bounds)
         self.aircraft = []
         self.request_session = request_session
+
+        self._token_manager = OpenSkyTokenManager(self.request_session)
 
     def _build_request(
         self, lat_min: float, lat_max: float, lon_min: float, lon_max: float
@@ -146,10 +198,7 @@ class OpenSky(APIHandlerBase):
             "extended": 1,
         }
         opensky_url = build_url(self._api_url_base, opensky_params)
-
-        opensky_auth = f"{secrets['opensky_username']}:{secrets['opensky_password']}"
-        auth_token = b64encode(opensky_auth.encode("utf-8")).decode("ascii")
-        opensky_header = {"Authorization": f"Basic {auth_token}"}
+        opensky_header = self._token_manager.headers()
 
         return opensky_url, opensky_header
 

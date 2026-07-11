@@ -60,12 +60,12 @@ secrets = {
     # Geoapify, used to generate static mapping
     "geoapify_key": "YOUR_GEOAPIFY_API_KEY",
     # Adafruit IO, used for transient image hosting & local time lookup
-    "aio_username" : "YOUR_AIO_USERNAME",
-    "aio_key" : "YOUR_AIO_KEY",
+    "aio_username": "YOUR_AIO_USERNAME",
+    "aio_key": "YOUR_AIO_KEY",
     # Open Sky Network credentials, for getting flight information
     # Can be omitted if not using OpenSky
-    "opensky_username": "YOUR_OPENSKY_USERNAME",
-    "opensky_password": "YOUR_OPENSKY_PASSWORD",
+    "opensky_id": "YOUR_OPENSKY_CLIENT_ID",
+    "opensky_secret": "YOUR_OPENSKY_SECRET",
     # Proxy API Gateway credentials
     # Can be omitted if not using a proxy server
     "proxy_api_url": "YOUR_PROXY_API_URL",
