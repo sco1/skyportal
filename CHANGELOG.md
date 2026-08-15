@@ -1,6 +1,16 @@
 # Changelog
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (`<major>`.`<minor>`.`<patch>`)
 
+## [v2.1.0]
+### Added
+* #49 Add support for Flightradar24 API
+
+### Changed
+* Bump supported CircuitPython to v10.2 only
+* Bump vendored libraries to v10.2 compatible `*.mpy` files
+* Bump vendored `mpy-cross` binaries to CircuitPython v10.2
+* #47 Update OpenSky API for new authentication flow
+
 ## [v2.0.0]
 ### Added
 * #36 Add support for the FeatherS3 + TFT FeatherWing V2 w/TSC2007
