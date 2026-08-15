@@ -14,10 +14,13 @@ secrets = {
     # Adafruit IO, used for transient image hosting
     "aio_username": "YOUR_AIO_USERNAME",
     "aio_key": "YOUR_AIO_KEY",
-    # Open Sky Network credentials, for getting flight information
+    # Open Sky Network credentials
     # Can be omitted if not using OpenSky
     "opensky_id": "YOUR_OPENSKY_CLIENT_ID",
     "opensky_secret": "YOUR_OPENSKY_SECRET",
+    # Flightradar24 credentials
+    # Can be omitted if not using Flightradar24
+    "fr24_token": "YOUR_FR24_TOKEN",
     # Proxy API Gateway credentials
     # Can be omitted if not using a proxy server
     "proxy_api_url": "YOUR_PROXY_API_URL",

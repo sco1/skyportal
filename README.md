@@ -3,7 +3,7 @@
 [![GitHub License](https://img.shields.io/github/license/sco1/skyportal?color=magenta)](https://github.com/sco1/skyportal/blob/main/LICENSE)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/sco1/skyportal/main.svg)](https://results.pre-commit.ci/latest/github/sco1/skyportal/main)
 
-A CircuitPython based flight tracker powered by [Adafruit](https://io.adafruit.com/), [Geoapify](https://www.geoapify.com/), [ADSB.lol](https://adsb.lol), and [The OpenSky Network](https://opensky-network.org/).
+A CircuitPython based flight tracker for the Adafruit PyPortal and FeatherS3.
 
 Heavily inspired by Bob Hammell's PyPortal Flight Tracker ([GH](https://github.com/rhammell/pyportal-flight-tracker), [Tutorial](https://www.hackster.io/rhammell/pyportal-flight-tracker-0be6b0#story)).
 
@@ -62,10 +62,13 @@ secrets = {
     # Adafruit IO, used for transient image hosting & local time lookup
     "aio_username": "YOUR_AIO_USERNAME",
     "aio_key": "YOUR_AIO_KEY",
-    # Open Sky Network credentials, for getting flight information
+    # Open Sky Network credentials
     # Can be omitted if not using OpenSky
     "opensky_id": "YOUR_OPENSKY_CLIENT_ID",
     "opensky_secret": "YOUR_OPENSKY_SECRET",
+    # Flightradar24 credentials
+    # Can be omitted if not using Flightradar24
+    "fr24_token": "YOUR_FR24_TOKEN",
     # Proxy API Gateway credentials
     # Can be omitted if not using a proxy server
     "proxy_api_url": "YOUR_PROXY_API_URL",
@@ -90,17 +93,22 @@ A collection of functionality-related constants is specified in `skyportal_confi
 1. See [Data Sources](#data-sources) for valid options
 
 ## Data Sources
+**NOTE:** Your chosen API provides a lot of interesting information in the state vector provided for each aircraft. Depending on the level of congestion in your query area, may be more data than can fit into RAM (See: [Known Limitations](#known-limitations)).
+
 ### OpenSky-Network - `"opensky"`
 Query the [OpenSky Network](https://opensky-network.org/) API. This requires a user account to be created & credentials added to `secrets.py`.
 
 Information on their REST API can be found [here](https://openskynetwork.github.io/opensky-api/rest.html).
 
 ### ADSB.lol - `"adsblol"`
-Query the [ADSB.lol](https://adsb.lol/). This currently does not require user authentication.
+Query the [ADSB.lol](https://adsb.lol/) API. This currently does not require user authentication.
 
 Information on their REST API can be found [here](https://api.adsb.lol/docs).
 
-**NOTE:** This API provides a lot of interesting information in the state vector provided for each aircraft. Depending on the level of congestion in your query area, may be more data than can fit into RAM (See: [Known Limitations](#known-limitations)).
+### Flightradar24 - `"fr24"`
+Query the [Flightradar24](https://www.flightradar24.com) API. This requires a user account to be created & credentials added to `secrets.py`.
+
+Information on their REST API can be found [here](https://fr24api.flightradar24.com/docs). Skyportal utilizes the [Live Flight Positions Light](https://fr24api.flightradar24.com/docs/endpoints/overview#live-flight-positions-light) endpoint.
 
 ### Proxy API - `"proxy"`
 Query a user-specified proxy server using the URL and API key provided in `secrets.py`.
@@ -117,7 +125,6 @@ The proxy API is expected to return two parameters:
   * `"api_time"` - UTC epoch time, in seconds, may be a float
 
 An example using ADSB.lol and AWS Lambda is provided by this repository in [`./adsblol-proxy`](./adsblol-proxy/README.md)
-
 
 ## Touchscreen Functionality
 **NOTE:** Touchscreen input is mostly limited to one touch event per screen tap, rather than continuously firing while the screen is being touched.

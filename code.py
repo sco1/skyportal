@@ -29,7 +29,7 @@ def _utc_to_local(utc_timestamp: float, utc_offset: str = "-0000") -> datetime:
     UTC offset is assumed to be provided as `"±HHMM"`.
     """
     hours = int(utc_offset[:3])
-    minutes = math.copysign(int(utc_offset[-2:]), hours)
+    minutes = int(math.copysign(int(utc_offset[-2:]), hours))
     delta = timedelta(hours=hours, minutes=minutes)
 
     utc_time = datetime.fromtimestamp(utc_timestamp)
@@ -82,6 +82,11 @@ elif skyportal_config.AIRCRAFT_DATA_SOURCE == "opensky":
 
     api_handler = OpenSky(request_session=device.session, grid_bounds=grid_bounds)
     print("Using OpenSky as aircraft data source")
+elif skyportal_config.AIRCRAFT_DATA_SOURCE == "fr24":
+    from skyportal.networklib import FR24
+
+    api_handler = FR24(request_session=device.session, grid_bounds=grid_bounds)
+    print("Using Flightradar24 as aircraft data source")
 elif skyportal_config.AIRCRAFT_DATA_SOURCE == "proxy":
     from skyportal.networklib import ProxyAPI
 

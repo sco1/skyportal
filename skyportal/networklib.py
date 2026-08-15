@@ -233,6 +233,63 @@ class ADSBLol(APIHandlerBase):
         self.request_session = request_session
 
 
+class FR24(APIHandlerBase):
+    """
+    Flightradar24 API handler, using the Live Flight Positions Light endpoint.
+
+    See: https://fr24api.flightradar24.com/docs/endpoints/overview#live-flight-positions-light
+    """
+
+    _name = "Flightradar24"
+    _api_url_base = "https://fr24api.flightradar24.com/api/live/flight-positions/light"
+
+    _api_time_key = ""  # FR24 response does not provide a separate timestamp, need to pull from AC
+    _aircraft_key = "data"
+    _aircraft_converter = AircraftState.from_fr24
+
+    def __init__(
+        self,
+        grid_bounds: tuple[float, float, float, float],
+        request_session: requests.Session,
+    ) -> None:
+        self.aircraft = []
+        self.request_session = request_session
+
+        lat_min, lat_max, lon_min, lon_max = grid_bounds
+        self._url = build_url(
+            base=self._api_url_base,
+            params={"bounds": (lat_max, lat_min, lon_min, lon_max)},  # API expects N,S,W,E
+        )
+        self._header = {
+            "Accept": "application/json",
+            "Accept-Version": "v1",
+            "Authorization": f"Bearer {secrets["fr24_token"]}",
+        }
+
+    def _parse_api_response(self, flight_data: dict) -> tuple[list[AircraftState], float]:
+        # The FR24 API response does not provide a separate timestamp, so this needs to be pulled
+        # from an aircraft state vector
+
+        # If no aircraft are present, best we can do is carry the old time forward
+        if not flight_data[self._aircraft_key]:
+            api_time = self.api_time
+        else:
+            dtstr = flight_data[self._aircraft_key][0]
+            api_dt = datetime.fromisoformat(dtstr)
+            api_time = api_dt.timestamp()
+
+        states = []
+        for state_vector in flight_data[self._aircraft_key]:
+            state = self._aircraft_converter(state_vector)
+            if skyportal_config.SKIP_GROUND and state.on_ground:
+                # If we're not plotting ground planes don't bother keeping them in memory
+                continue
+
+            states.append(state)
+
+        return states, api_time
+
+
 class ProxyAPI(APIHandlerBase):
     """
     Proxy API handler.
