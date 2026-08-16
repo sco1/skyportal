@@ -180,11 +180,11 @@ class OpenSky(APIHandlerBase):
     def __init__(
         self, grid_bounds: tuple[float, float, float, float], request_session: requests.Session
     ) -> None:
-        self._url, self._header = self._build_request(*grid_bounds)
-        self.aircraft = []
         self.request_session = request_session
-
         self._token_manager = OpenSkyTokenManager(self.request_session)
+
+        self.aircraft = []
+        self._url, self._header = self._build_request(*grid_bounds)
 
     def _build_request(
         self, lat_min: float, lat_max: float, lon_min: float, lon_max: float

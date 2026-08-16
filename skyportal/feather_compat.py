@@ -60,6 +60,7 @@ class FeatherS3:
         # This should also attempt to mount the SD card
         self._fw = tft_featherwing_35.TFTFeatherWing35V2()
         self.display = self._fw.display
+        self.display.rotation = 180
 
         # Default assumes portrait but we're in landscape
         self._fw.touchscreen.swap_xy = True
