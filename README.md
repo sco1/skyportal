@@ -35,7 +35,7 @@ boot.py
 code.py
 pyportal_startup.bmp
 pyportal_startup.wav
-secrets.py
+settings.toml
 skyportal_config.py
 ```
 
@@ -48,32 +48,36 @@ The Skyportal [Releases page](https://github.com/sco1/skyportal/releases) contai
 
 ### Configuration
 #### Secrets
-The following secrets are required for functionality:
+CircuitPython loads information from your `settings.toml` file as environment variables. The following secrets are used for functionality.
 
-```py
-secrets = {
-    # Your local timezone, see: http://worldtimeapi.org/timezones
-    "timezone": "America/New_York",
-    # WIFI information
-    "ssid": "YOUR_SSID",
-    "password": "YOUR_WIFI_PASSWORD",
-    # Geoapify, used to generate static mapping
-    "geoapify_key": "YOUR_GEOAPIFY_API_KEY",
-    # Adafruit IO, used for transient image hosting & local time lookup
-    "aio_username": "YOUR_AIO_USERNAME",
-    "aio_key": "YOUR_AIO_KEY",
-    # Open Sky Network credentials
-    # Can be omitted if not using OpenSky
-    "opensky_id": "YOUR_OPENSKY_CLIENT_ID",
-    "opensky_secret": "YOUR_OPENSKY_SECRET",
-    # Flightradar24 credentials
-    # Can be omitted if not using Flightradar24
-    "fr24_token": "YOUR_FR24_TOKEN",
-    # Proxy API Gateway credentials
-    # Can be omitted if not using a proxy server
-    "proxy_api_url": "YOUR_PROXY_API_URL",
-    "proxy_api_key": "YOUR_PROXY_API_KEY",
-}
+```toml
+# Your local timezone, see: http://worldtimeapi.org/timezones
+TIMEZONE = "America/New_York"
+
+# WiFi Information
+CIRCUITPY_WIFI_SSID = "YOUR_WIFI_SSID"
+CIRCUITPY_WIFI_PASSWORD = "YOUR_WIFI_PASSWORD"
+
+# Adafruit IO, used for transient image hosting
+ADAFRUIT_AIO_USERNAME = "YOUR_AIO_USERNAME"
+ADAFRUIT_AIO_KEY = "YOUR_AIO_KEY"
+
+# Geoapify, used to generate static mapping
+GEOAPIFY_KEY = "YOUR_GEOAPIFY_API_KEY"
+
+# Open Sky Network credentials
+# Can be omitted if not using OpenSky
+OPENSKY_ID = "YOUR_OPENSKY_CLIENT_ID"
+OPENSKY_SECRET = "YOUR_OPENSKY_SECRET"
+
+# Flightradar24 credentials
+# Can be omitted if not using Flightradar24
+FR24_TOKEN = "YOUR_FR24_TOKEN"
+
+# Proxy API Gateway credentials
+# Can be omitted if not using a proxy server
+PROXY_API_URL = "YOUR_PROXY_API_URL"
+PROXY_API_KEY = "YOUR_PROXY_API_KEY"
 ```
 
 #### Skyportal Configuration
@@ -96,7 +100,7 @@ A collection of functionality-related constants is specified in `skyportal_confi
 **NOTE:** Your chosen API provides a lot of interesting information in the state vector provided for each aircraft. Depending on the level of congestion in your query area, may be more data than can fit into RAM (See: [Known Limitations](#known-limitations)).
 
 ### OpenSky-Network - `"opensky"`
-Query the [OpenSky Network](https://opensky-network.org/) API. This requires a user account to be created & credentials added to `secrets.py`.
+Query the [OpenSky Network](https://opensky-network.org/) API. This requires a user account to be created & credentials added to `settings.toml`.
 
 Information on their REST API can be found [here](https://openskynetwork.github.io/opensky-api/rest.html).
 
@@ -106,12 +110,12 @@ Query the [ADSB.lol](https://adsb.lol/) API. This currently does not require use
 Information on their REST API can be found [here](https://api.adsb.lol/docs).
 
 ### Flightradar24 - `"fr24"`
-Query the [Flightradar24](https://www.flightradar24.com) API. This requires a user account to be created & credentials added to `secrets.py`.
+Query the [Flightradar24](https://www.flightradar24.com) API. This requires a user account to be created & credentials added to `settings.toml`.
 
 Information on their REST API can be found [here](https://fr24api.flightradar24.com/docs). Skyportal utilizes the [Live Flight Positions Light](https://fr24api.flightradar24.com/docs/endpoints/overview#live-flight-positions-light) endpoint.
 
 ### Proxy API - `"proxy"`
-Query a user-specified proxy server using the URL and API key provided in `secrets.py`.
+Query a user-specified proxy server using the URL and API key provided in `settings.toml`.
 
 For authentication, the API is assumed to expect an API key provided in the `"x-api-key"` header.
 

@@ -24,7 +24,7 @@ jobs:
         tar -cvf bundle_base.tar \
           ./boot.py              \
           ./code.py              \
-          ./secrets.py           \
+          ./settings.toml        \
           ./skyportal_config.py
 
     - name: Build PyPortal bundle base

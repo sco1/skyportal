@@ -95,4 +95,4 @@ $ curl --location "https://abcd123.execute-api.us-east-69.amazonaws.com/live/?la
 Which should give back some aircraft data.
 
 ## Configuring Skyportal
-To utilize the proxy server, copy your Invoke URL and API key into `secrets.py`, and set `AIRCRAFT_DATA_SOURCE = "proxy"` in your `skyportal_config.py`.
+To utilize the proxy server, copy your Invoke URL and API key into `settings.toml`, and set `AIRCRAFT_DATA_SOURCE = "proxy"` in your `skyportal_config.py`.

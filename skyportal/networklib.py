@@ -1,10 +1,10 @@
 import gc
+import os
 
 import adafruit_requests as requests
 from adafruit_datetime import datetime, timedelta
 
 import skyportal_config
-from secrets import secrets
 from skyportal.aircraftlib import AircraftState
 
 # CircuitPython doesn't have the typing module, so throw this away at runtime
@@ -142,8 +142,8 @@ class OpenSkyTokenManager:
             self._token_url,
             data={
                 "grant_type": "client_credentials",
-                "client_id": secrets["opensky_id"],
-                "client_secret": secrets["opensky_secret"],
+                "client_id": os.getenv("OPENSKY_ID"),  # Presence checked in code.py
+                "client_secret": os.getenv("OPENSKY_SECRET"),  # Presence checked in code.py
             },
         )
 
@@ -263,7 +263,7 @@ class FR24(APIHandlerBase):
         self._header = {
             "Accept": "application/json",
             "Accept-Version": "v1",
-            "Authorization": f"Bearer {secrets["fr24_token"]}",
+            "Authorization": f"Bearer {os.getenv("FR24_TOKEN")}",  # Presence checked in code.py
         }
 
     def _parse_api_response(self, flight_data: dict) -> tuple[list[AircraftState], float]:
@@ -307,7 +307,7 @@ class ProxyAPI(APIHandlerBase):
     """
 
     _name = "Proxy API"
-    _api_url_base = secrets["proxy_api_url"]
+    _api_url_base = os.getenv("PROXY_API_URL")  # Presence checked in code.py
 
     _api_time_key = "api_time"
     _aircraft_key = "ac"
@@ -328,6 +328,6 @@ class ProxyAPI(APIHandlerBase):
             "radius": radius,
         }
         proxy_url = build_url(self._api_url_base, proxy_params)
-        proxy_header = {"x-api-key": secrets["proxy_api_key"]}
+        proxy_header = {"x-api-key": os.getenv("PROXY_API_KEY")}  # Presence checked in code.py
 
         return proxy_url, proxy_header

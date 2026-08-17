@@ -1,0 +1,27 @@
+# Your local timezone, see: http://worldtimeapi.org/timezones
+TIMEZONE = "America/New_York"
+
+# WiFi Information
+CIRCUITPY_WIFI_SSID = "YOUR_WIFI_SSID"
+CIRCUITPY_WIFI_PASSWORD = "YOUR_WIFI_PASSWORD"
+
+# Adafruit IO, used for transient image hosting
+ADAFRUIT_AIO_USERNAME = "YOUR_AIO_USERNAME"
+ADAFRUIT_AIO_KEY = "YOUR_AIO_KEY"
+
+# Geoapify, used to generate static mapping
+GEOAPIFY_KEY = "YOUR_GEOAPIFY_API_KEY"
+
+# Open Sky Network credentials
+# Can be omitted if not using OpenSky
+OPENSKY_ID = "YOUR_OPENSKY_CLIENT_ID"
+OPENSKY_SECRET = "YOUR_OPENSKY_SECRET"
+
+# Flightradar24 credentials
+# Can be omitted if not using Flightradar24
+FR24_TOKEN = "YOUR_FR24_TOKEN"
+
+# Proxy API Gateway credentials
+# Can be omitted if not using a proxy server
+PROXY_API_URL = "YOUR_PROXY_API_URL"
+PROXY_API_KEY = "YOUR_PROXY_API_KEY"

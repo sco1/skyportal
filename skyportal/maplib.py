@@ -1,18 +1,29 @@
 import gc
 import math
+import os
 from collections import OrderedDict
 
 import adafruit_requests as requests
 import displayio
 
-from secrets import secrets
 from skyportal.networklib import build_url, urlencode
 from skyportal_config import GRID_WIDTH_MI, MAP_CENTER_LAT, MAP_CENTER_LON
 
+AIO_USERNAME = os.getenv("ADAFRUIT_AIO_USERNAME", None)
+if AIO_USERNAME is None:
+    raise Exception("ADAFRUIT_AIO_USERNAME could not be located, please check settings.toml")
+AIO_KEY = os.getenv("ADAFRUIT_AIO_KEY", None)
+if AIO_KEY is None:
+    raise Exception("ADAFRUIT_AIO_KEY could not be located, please check settings.toml")
+
+AIO_URL_BASE = f"https://io.adafruit.com/api/v2/{AIO_USERNAME}/integrations/image-formatter"
+
+GEOAPIFY_KEY = os.getenv("GEOAPIFY_KEY", None)
+if GEOAPIFY_KEY is None:
+    raise Exception("GEOAPIFY_KEY could not be located, please check settings.toml")
+
 GEOAPIFY_API_URL_BASE = "https://maps.geoapify.com/v1/staticmap"
 MAP_STYLE = "klokantech-basic"
-
-AIO_URL_BASE = f"https://io.adafruit.com/api/v2/{secrets['aio_username']}/integrations/image-formatter"  # noqa: E501
 
 
 def build_bounding_box(
@@ -107,7 +118,7 @@ def get_base_map(
     lat_min, lat_max, lon_min, lon_max = grid_bounds
     map_params = OrderedDict(
         [
-            ("apiKey", secrets["geoapify_key"]),
+            ("apiKey", GEOAPIFY_KEY),
             ("style", MAP_STYLE),
             ("format", "png"),
             ("center", f"lonlat:{MAP_CENTER_LON},{MAP_CENTER_LAT}"),
@@ -120,7 +131,7 @@ def get_base_map(
 
     adaIO_params = OrderedDict(
         [
-            ("x-aio-key", secrets["aio_key"]),
+            ("x-aio-key", AIO_KEY),
             ("width", screen_width),
             ("height", screen_height),
             ("output", "BMP16"),

@@ -1,3 +1,4 @@
+import os
 import ssl
 import time
 from collections import OrderedDict
@@ -10,12 +11,21 @@ from adafruit_featherwing import tft_featherwing_35
 from adafruit_touchscreen import map_range
 from adafruit_tsc2007 import TSC2007
 
-from secrets import secrets
+from skyportal.maplib import AIO_KEY, AIO_USERNAME
 from skyportal.networklib import build_url, urlencode
 
-# Time service API requires AIO username & API key from secrets
-TIME_SERVICE = f"https://io.adafruit.com/api/v2/{secrets['aio_username']}/integrations/time/strftime"  # noqa: E501
+# Time service API requires AIO username & API key
+TIME_SERVICE = (
+    f"https://io.adafruit.com/api/v2/{AIO_USERNAME}/integrations/time/strftime"  # noqa: E501
+)
 TIME_SERVICE_FORMAT = r"%Y-%m-%d %H:%M:%S.%L %j %u %z %Z"
+
+WIFI_SSID = os.getenv("CIRCUITPY_WIFI_SSID", None)
+if WIFI_SSID is None:
+    raise Exception("CIRCUITPY_WIFI_SSID could not be located, please check settings.toml")
+WIFI_PWD = os.getenv("CIRCUITPY_WIFI_PASSWORD", None)
+if WIFI_PWD is None:
+    raise Exception("CIRCUITPY_WIFI_PASSWORD could not be located, please check settings.toml")
 
 
 class FeatherS3:
@@ -85,7 +95,7 @@ class FeatherS3:
 
     def connect(self) -> None:
         """Connect to the WiFi network specified `secrets` & initialize a request session."""
-        wifi.radio.connect(secrets["ssid"], secrets["password"])
+        wifi.radio.connect(WIFI_SSID, WIFI_PWD)
         print("Wifi connected")
 
         pool = socketpool.SocketPool(wifi.radio)
@@ -122,7 +132,7 @@ class FeatherS3:
         """
         adaIO_params = OrderedDict(
             [
-                ("x-aio-key", secrets["aio_key"]),
+                ("x-aio-key", AIO_KEY),
                 ("tz", self.tz),
                 ("fmt", urlencode(TIME_SERVICE_FORMAT)),
             ]

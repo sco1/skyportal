@@ -12,14 +12,13 @@ from skyportal.maplib import build_bounding_box
 from skyportal.networklib import APIExceptionError, APIHandlerBase, APITimeoutError
 
 try:
-    from secrets import secrets
-except ImportError as e:
-    raise Exception("Could not locate secrets file.") from e
-
-try:
     import skyportal_config
 except ImportError as e:
     raise Exception("Could not locate configuration file.") from e
+
+TIMEZONE = os.getenv("TIMEZONE", None)
+if TIMEZONE is None:
+    raise Exception("TIMEZONE could not be located, please check settings.toml")
 
 
 def _utc_to_local(utc_timestamp: float, utc_offset: str = "-0000") -> datetime:
@@ -53,12 +52,12 @@ if "PyPortal" in impl._machine:
     print("Initializing PyPortal")
     from skyportal.pyportal_compat import PyPortal
 
-    device = PyPortal(tz=secrets["timezone"])
+    device = PyPortal(tz=TIMEZONE)
 elif "FeatherS3" in impl._machine:
     print("Initializing FeatherS3")
     from skyportal.feather_compat import FeatherS3
 
-    device = FeatherS3(tz=secrets["timezone"])
+    device = FeatherS3(tz=TIMEZONE)
 else:
     raise RuntimeError("Unknown machine type: '{impl._machine}'")
 
@@ -80,15 +79,33 @@ if skyportal_config.AIRCRAFT_DATA_SOURCE == "adsblol":
 elif skyportal_config.AIRCRAFT_DATA_SOURCE == "opensky":
     from skyportal.networklib import OpenSky
 
+    OPENSKY_ID = os.getenv("OPENSKY_ID", None)
+    if OPENSKY_ID is None:
+        raise Exception("OPENSKY_ID could not be located, please check settings.toml")
+    OPENSKY_SECRET = os.getenv("OPENSKY_SECRET", None)
+    if OPENSKY_SECRET is None:
+        raise Exception("OPENSKY_SECRET could not be located, please check settings.toml")
+
     api_handler = OpenSky(request_session=device.session, grid_bounds=grid_bounds)
     print("Using OpenSky as aircraft data source")
 elif skyportal_config.AIRCRAFT_DATA_SOURCE == "fr24":
     from skyportal.networklib import FR24
 
+    FR24_TOKEN = os.getenv("FR24_TOKEN", None)
+    if FR24_TOKEN is None:
+        raise Exception("FR24_TOKEN could not be located, please check settings.toml")
+
     api_handler = FR24(request_session=device.session, grid_bounds=grid_bounds)
     print("Using Flightradar24 as aircraft data source")
 elif skyportal_config.AIRCRAFT_DATA_SOURCE == "proxy":
     from skyportal.networklib import ProxyAPI
+
+    PROXY_API_URL = os.getenv("PROXY_API_URL", None)
+    if PROXY_API_URL is None:
+        raise Exception("PROXY_API_URL could not be located, please check settings.toml")
+    PROXY_API_KEY = os.getenv("PROXY_API_KEY", None)
+    if PROXY_API_KEY is None:
+        raise Exception("PROXY_API_KEY could not be located, please check settings.toml")
 
     api_handler = ProxyAPI(
         request_session=device.session,
