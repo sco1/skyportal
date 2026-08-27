@@ -1,7 +1,21 @@
 import json
+import platform
 from enum import IntEnum
 
-import httpx
+import niquests
+
+PROXY_VERSION = "2.0.0"
+USER_AGENT = (
+    f"ADSB Lambda Proxy/{PROXY_VERSION}"
+    f"niquests/{niquests.__version__} "
+    f"{platform.python_implementation()}/{platform.python_version()}"
+)
+
+RETRY = niquests.RetryConfiguration(
+    total=3,
+    status_forcelist=[429],
+    respect_retry_after_header=True,
+)
 
 URL_BASE = "https://api.adsb.lol/v2"
 
@@ -42,7 +56,7 @@ class AircraftCategory(IntEnum):
 def query_data(lat: float, lon: float, radius: float) -> dict:
     """Execute the desired ADSB.lol query & return the JSON response."""
     query_url = f"{URL_BASE}/lat/{lat}/lon/{lon}/dist/{radius}"
-    r = httpx.get(query_url)
+    r = niquests.get(query_url, headers={"User-Agent": USER_AGENT}, retries=RETRY)
     r.raise_for_status()
 
     return r.json()
@@ -103,7 +117,7 @@ def lambda_handler(event, context) -> dict:  # noqa: ANN001 D103
     try:
         params = event["queryStringParameters"]
         full_data = query_data(lat=params["lat"], lon=params["lon"], radius=params["radius"])
-    except httpx.HTTPError as e:
+    except niquests.HTTPError as e:
         return {
             "statusCode": 400,
             "body": json.dumps(f"HTTP Exception for {e.request.url} - {e}"),

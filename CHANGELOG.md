@@ -12,6 +12,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (`<ma
 * Bump vendored `mpy-cross` binaries to CircuitPython v10.3
 * #47 Update OpenSky API for new authentication flow
 * Migrate from `settings.py` to `settings.toml` for secrets management
+* #53 (Internal) Update AWS Lambda proxy sample
 
 ## [v2.0.0]
 ### Added
