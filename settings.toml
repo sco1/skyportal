@@ -25,3 +25,7 @@ FR24_TOKEN = "YOUR_FR24_TOKEN"
 # Can be omitted if not using a proxy server
 PROXY_API_URL = "YOUR_PROXY_API_URL"
 PROXY_API_KEY = "YOUR_PROXY_API_KEY"
+
+# Disable SD card passthrough over USB
+# Temporary workaround to restore map loading on Feather w/CP10.x
+CIRCUITPY_SDCARD_USB=false

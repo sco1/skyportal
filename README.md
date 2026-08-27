@@ -17,7 +17,7 @@ Compatibilty is guaranteed for the following hardware configurations:
 * [FeatherS3](https://www.adafruit.com/product/5399) + [FeatherWing V2 w/TSC2007](https://www.adafruit.com/product/3651)
 
 ## Getting Started
-Users are assumed have read through [Adafruit's PyPortal learning guide](https://learn.adafruit.com/adafruit-pyportal). CircuitPython v10.2 is currently in use for this repository, no other versions are evaluated & reverse compatibility is not guaranteed.
+Users are assumed have read through [Adafruit's PyPortal learning guide](https://learn.adafruit.com/adafruit-pyportal). CircuitPython v10.3 is currently in use for this repository, no other versions are evaluated & reverse compatibility is not guaranteed.
 
 The CircuitPython libraries in `lib` are sourced from the Official and Community bundles, which can be found on the [CircuitPython libraries page](https://learn.adafruit.com/adafruit-pyportal). Compatibility for a given SkyPortal release is only ensured with library files vendored by this repository.
 
