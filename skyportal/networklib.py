@@ -5,6 +5,7 @@ import adafruit_requests as requests
 from adafruit_datetime import datetime, timedelta
 
 import skyportal_config
+from skyportal import USER_AGENT
 from skyportal.aircraftlib import AircraftState
 
 # CircuitPython doesn't have the typing module, so throw this away at runtime
@@ -66,6 +67,12 @@ class APIHandlerBase:  # noqa: D101
 
     def _query_api(self, url: str, header: dict[str, str] | None = None) -> dict[str, t.Any]:
         gc.collect()
+
+        if not header:
+            header = {"User-Agent": USER_AGENT}
+        elif "User-Agent" not in header:
+            header["User-Agent"] = USER_AGENT
+
         r = self.request_session.get(url=url, headers=header)
         if r.status_code != 200:
             raise RuntimeError(
@@ -104,7 +111,7 @@ class APIHandlerBase:  # noqa: D101
             del flight_data
             gc.collect()
         except RuntimeError as e:
-            raise APIExceptionError(f"Error retrieving flight data from {self._name}") from e
+            raise APIExceptionError(f"Error retrieving flight data from {self._name}:\n{e}") from e
         except (requests.OutOfRetries, TimeoutError) as e:
             raise APITimeoutError("Request timed out") from e
 

@@ -5,3 +5,7 @@ versioning_type = "semver"
 [[tool.bumper.files]]
 file = "./pyproject.toml"
 search = 'version = "{current_version}"'
+
+[[tool.bumper.files]]
+file = "./skyportal/__init__.py"
+search = '__version__ = "{current_version}"'

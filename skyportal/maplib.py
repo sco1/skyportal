@@ -6,6 +6,7 @@ from collections import OrderedDict
 import adafruit_requests as requests
 import displayio
 
+from skyportal import USER_AGENT
 from skyportal.networklib import build_url, urlencode
 from skyportal_config import GRID_WIDTH_MI, MAP_CENTER_LAT, MAP_CENTER_LON
 
@@ -142,7 +143,7 @@ def get_base_map(
 
     try:
         print("Requesting map tile from Geoapify via AdaIO")
-        r = request_session.get(adaIO_query_url)
+        r = request_session.get(adaIO_query_url, headers={"User-Agent": USER_AGENT})
         if r.status_code != 200:
             raise RuntimeError(f"Bad response received from AdaIO: {r.status_code}, {r.text}")
 

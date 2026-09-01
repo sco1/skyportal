@@ -11,6 +11,7 @@ from adafruit_featherwing import tft_featherwing_35
 from adafruit_touchscreen import map_range
 from adafruit_tsc2007 import TSC2007
 
+from skyportal import USER_AGENT
 from skyportal.maplib import AIO_KEY, AIO_USERNAME
 from skyportal.networklib import build_url, urlencode
 
@@ -140,7 +141,7 @@ class FeatherS3:
         query_url = build_url(TIME_SERVICE, adaIO_params)
 
         print(f"Querying local time for '{self.tz}'")
-        resp = self.session.get(query_url)
+        resp = self.session.get(query_url, headers={"User-Agent": USER_AGENT})
         if resp.status_code != 200:
             raise RuntimeError("Error fetching local time from AIO")
 

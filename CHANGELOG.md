@@ -5,6 +5,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (`<ma
 ### Added
 * #49 Add support for Flightradar24 API
 * Explicitly disable USB SD passthrough in `settings.toml`
+* #51 Add Skyportal user agent to all API calls
 
 ### Changed
 * Bump supported CircuitPython to v10.3 only
