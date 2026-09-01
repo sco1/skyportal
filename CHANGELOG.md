@@ -1,6 +1,21 @@
 # Changelog
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (`<major>`.`<minor>`.`<patch>`)
 
+## [v2.1.0]
+### Added
+* #49 Add support for Flightradar24 API
+* Explicitly disable USB SD passthrough in `settings.toml`
+* #51 Add Skyportal user agent to all API calls
+
+### Changed
+* Bump supported CircuitPython to v10.3 only
+* Bump vendored libraries to v10.3 compatible `*.mpy` files
+* Bump vendored `mpy-cross` binaries to CircuitPython v10.3
+* #47 Update OpenSky API for new authentication flow
+* Migrate from `settings.py` to `settings.toml` for secrets management
+* #50 Cache UTC offset during device initialization rather than querying AIO every time it's needed
+* #53 (Internal) Update AWS Lambda proxy sample
+
 ## [v2.0.0]
 ### Added
 * #36 Add support for the FeatherS3 + TFT FeatherWing V2 w/TSC2007

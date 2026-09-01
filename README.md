@@ -3,7 +3,7 @@
 [![GitHub License](https://img.shields.io/github/license/sco1/skyportal?color=magenta)](https://github.com/sco1/skyportal/blob/main/LICENSE)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/sco1/skyportal/main.svg)](https://results.pre-commit.ci/latest/github/sco1/skyportal/main)
 
-A CircuitPython based flight tracker powered by [Adafruit](https://io.adafruit.com/), [Geoapify](https://www.geoapify.com/), [ADSB.lol](https://adsb.lol), and [The OpenSky Network](https://opensky-network.org/).
+A CircuitPython based flight tracker for the Adafruit PyPortal and FeatherS3.
 
 Heavily inspired by Bob Hammell's PyPortal Flight Tracker ([GH](https://github.com/rhammell/pyportal-flight-tracker), [Tutorial](https://www.hackster.io/rhammell/pyportal-flight-tracker-0be6b0#story)).
 
@@ -17,7 +17,7 @@ Compatibilty is guaranteed for the following hardware configurations:
 * [FeatherS3](https://www.adafruit.com/product/5399) + [FeatherWing V2 w/TSC2007](https://www.adafruit.com/product/3651)
 
 ## Getting Started
-Users are assumed have read through [Adafruit's PyPortal learning guide](https://learn.adafruit.com/adafruit-pyportal). CircuitPython v9.2 is currently in use for this repository, no other versions are evaluated & reverse compatibility is not guaranteed.
+Users are assumed have read through [Adafruit's PyPortal learning guide](https://learn.adafruit.com/adafruit-pyportal). CircuitPython v10.3 is currently in use for this repository, no other versions are evaluated & reverse compatibility is not guaranteed.
 
 The CircuitPython libraries in `lib` are sourced from the Official and Community bundles, which can be found on the [CircuitPython libraries page](https://learn.adafruit.com/adafruit-pyportal). Compatibility for a given SkyPortal release is only ensured with library files vendored by this repository.
 
@@ -35,7 +35,7 @@ boot.py
 code.py
 pyportal_startup.bmp
 pyportal_startup.wav
-secrets.py
+settings.toml
 skyportal_config.py
 ```
 
@@ -48,29 +48,36 @@ The Skyportal [Releases page](https://github.com/sco1/skyportal/releases) contai
 
 ### Configuration
 #### Secrets
-The following secrets are required for functionality:
+CircuitPython loads information from your `settings.toml` file as environment variables. The following secrets are used for functionality.
 
-```py
-secrets = {
-    # Your local timezone, see: http://worldtimeapi.org/timezones
-    "timezone": "America/New_York",
-    # WIFI information
-    "ssid": "YOUR_SSID",
-    "password": "YOUR_WIFI_PASSWORD",
-    # Geoapify, used to generate static mapping
-    "geoapify_key": "YOUR_GEOAPIFY_API_KEY",
-    # Adafruit IO, used for transient image hosting & local time lookup
-    "aio_username" : "YOUR_AIO_USERNAME",
-    "aio_key" : "YOUR_AIO_KEY",
-    # Open Sky Network credentials, for getting flight information
-    # Can be omitted if not using OpenSky
-    "opensky_username": "YOUR_OPENSKY_USERNAME",
-    "opensky_password": "YOUR_OPENSKY_PASSWORD",
-    # Proxy API Gateway credentials
-    # Can be omitted if not using a proxy server
-    "proxy_api_url": "YOUR_PROXY_API_URL",
-    "proxy_api_key": "YOUR_PROXY_API_KEY",
-}
+```toml
+# Your local timezone, see: http://worldtimeapi.org/timezones
+TIMEZONE = "America/New_York"
+
+# WiFi Information
+CIRCUITPY_WIFI_SSID = "YOUR_WIFI_SSID"
+CIRCUITPY_WIFI_PASSWORD = "YOUR_WIFI_PASSWORD"
+
+# Adafruit IO, used for transient image hosting
+ADAFRUIT_AIO_USERNAME = "YOUR_AIO_USERNAME"
+ADAFRUIT_AIO_KEY = "YOUR_AIO_KEY"
+
+# Geoapify, used to generate static mapping
+GEOAPIFY_KEY = "YOUR_GEOAPIFY_API_KEY"
+
+# Open Sky Network credentials
+# Can be omitted if not using OpenSky
+OPENSKY_ID = "YOUR_OPENSKY_CLIENT_ID"
+OPENSKY_SECRET = "YOUR_OPENSKY_SECRET"
+
+# Flightradar24 credentials
+# Can be omitted if not using Flightradar24
+FR24_TOKEN = "YOUR_FR24_TOKEN"
+
+# Proxy API Gateway credentials
+# Can be omitted if not using a proxy server
+PROXY_API_URL = "YOUR_PROXY_API_URL"
+PROXY_API_KEY = "YOUR_PROXY_API_KEY"
 ```
 
 #### Skyportal Configuration
@@ -90,20 +97,25 @@ A collection of functionality-related constants is specified in `skyportal_confi
 1. See [Data Sources](#data-sources) for valid options
 
 ## Data Sources
+**NOTE:** Your chosen API provides a lot of interesting information in the state vector provided for each aircraft. Depending on the level of congestion in your query area, may be more data than can fit into RAM (See: [Known Limitations](#known-limitations)).
+
 ### OpenSky-Network - `"opensky"`
-Query the [OpenSky Network](https://opensky-network.org/) API. This requires a user account to be created & credentials added to `secrets.py`.
+Query the [OpenSky Network](https://opensky-network.org/) API. This requires a user account to be created & credentials added to `settings.toml`.
 
 Information on their REST API can be found [here](https://openskynetwork.github.io/opensky-api/rest.html).
 
 ### ADSB.lol - `"adsblol"`
-Query the [ADSB.lol](https://adsb.lol/). This currently does not require user authentication.
+Query the [ADSB.lol](https://adsb.lol/) API. This currently does not require user authentication.
 
 Information on their REST API can be found [here](https://api.adsb.lol/docs).
 
-**NOTE:** This API provides a lot of interesting information in the state vector provided for each aircraft. Depending on the level of congestion in your query area, may be more data than can fit into RAM (See: [Known Limitations](#known-limitations)).
+### Flightradar24 - `"fr24"`
+Query the [Flightradar24](https://www.flightradar24.com) API. This requires a user account to be created & credentials added to `settings.toml`.
+
+Information on their REST API can be found [here](https://fr24api.flightradar24.com/docs). Skyportal utilizes the [Live Flight Positions Light](https://fr24api.flightradar24.com/docs/endpoints/overview#live-flight-positions-light) endpoint.
 
 ### Proxy API - `"proxy"`
-Query a user-specified proxy server using the URL and API key provided in `secrets.py`.
+Query a user-specified proxy server using the URL and API key provided in `settings.toml`.
 
 For authentication, the API is assumed to expect an API key provided in the `"x-api-key"` header.
 
@@ -117,7 +129,6 @@ The proxy API is expected to return two parameters:
   * `"api_time"` - UTC epoch time, in seconds, may be a float
 
 An example using ADSB.lol and AWS Lambda is provided by this repository in [`./adsblol-proxy`](./adsblol-proxy/README.md)
-
 
 ## Touchscreen Functionality
 **NOTE:** Touchscreen input is mostly limited to one touch event per screen tap, rather than continuously firing while the screen is being touched.

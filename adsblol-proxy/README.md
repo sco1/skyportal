@@ -8,29 +8,31 @@ If, like me, you've never used AWS before this point, the following steps should
 From the Lambda console, create a new function with the following configuration:
   * Author from scratch
   * Whatever function name you want
-  * Python 3.11 Runtime
-  * x86_64 architecture
+  * Python 3.14 Runtime
+  * x86_64 architecture (this should be the default)
 
-Once created, edit your Runtime Settings and change the Handler to `adsblol_proxy.lambda_handler`.
+Once created, edit your Runtime Settings and change the Handler to `<your function name>.lambda_handler`.
 
 ### Create a `.zip` deployment
-Our Lambda depends on [`httpx`](https://github.com/encode/httpx/) to make its web request, so it will need to be installed along with its dependencies before we can deploy. One way to achieve this with Lambda is to upload a [`.zip` deployment package](https://docs.aws.amazon.com/lambda/latest/dg/python-package.html#python-package-create-dependencies); the documentation can be a little obtuse but ultimately the goal is to end up with a zip file whose contents look something like this:
+Our Lambda depends on [`niquests`](https://github.com/jawah/niquests/) to make its web request, so it will need to be installed along with its dependencies before we can deploy. One way to achieve this with Lambda is to upload a [`.zip` deployment package](https://docs.aws.amazon.com/lambda/latest/dg/python-package.html#python-package-create-dependencies); the documentation can be a little obtuse but ultimately the goal is to end up with a zip file whose contents look something like this:
 
 ```
-anyio/
-anyio-4.0.0.dist-info/
-certifi/
-certifi-2023.7.22.dist-info/
+charset_normalizer/
+charset_normalizer-3.5.1.dist-info/
 h11/
-h11-0.14.0.dist-info/
-httpcore/
-httpcore-1.0.2.dist-info/
-httpx/
-httpx-0.25.1.dist-info/
-idna/
-idna-3.4.dist-info/
-sniffio/
-sniffio-1.3.0.dist-info/
+h11-0.16.0.dist-info/
+jh2/
+jh2-5.0.13.dist-info/
+niquests/
+niquests-3.21.0.dist-info/
+qh3/
+qh3-1.9.4.dist-info/
+urllib3/
+urllib3_future/
+urllib3_future.pth
+urllib3_future-2.24.904.dist-info/
+wassima/
+wassima-2.1.3.dist-info/
 adsblol_proxy.py
 ```
 
@@ -39,7 +41,7 @@ I accomplished this using a virtual environment, e.g.:
 ```
 $ python -m venv ./.venv
 $ source ./.venv/Scripts/activate
-$ python -m pip install -U pip httpx
+$ python -m pip install -U pip niquests
 ```
 
 Move or copy the everything from `./.venv/Lib/site-packages` **EXCEPT** `pip` (blows up the file size unnecessarily & we don't need it) into the directory with `adsblol_proxy.py` and zip everything together so you get the layout above. You can then upload this zip file to Lambda & then deploy the code.
@@ -95,4 +97,4 @@ $ curl --location "https://abcd123.execute-api.us-east-69.amazonaws.com/live/?la
 Which should give back some aircraft data.
 
 ## Configuring Skyportal
-To utilize the proxy server, copy your Invoke URL and API key into `secrets.py`, and set `AIRCRAFT_DATA_SOURCE = "proxy"` in your `skyportal_config.py`.
+To utilize the proxy server, copy your Invoke URL and API key into `settings.toml`, and set `AIRCRAFT_DATA_SOURCE = "proxy"` in your `skyportal_config.py`.

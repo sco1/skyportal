@@ -1,6 +1,6 @@
 [project]
 name = "skyportal"
-version = "2.0.0"
+version = "2.1.0"
 description = "A CircuitPython based flight tracker."
 license = "MIT"
 license-files = ["LICENSE"]
@@ -15,14 +15,13 @@ classifiers = [
     "Operating System :: Other OS",
     "Programming Language :: Python :: Implementation :: MicroPython",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Topic :: Scientific/Engineering :: Visualization",
     "Typing :: Typed",
 ]
 
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = []
 
 [project.urls]
@@ -37,13 +36,13 @@ map_gen = "utils.build_map_tile:main"
 
 [dependency-groups]
 dev = [
-    "black~=25.0",
+    "black~=26.5",
     "flake8~=7.1",
     "flake8-annotations~=3.1",
     "flake8-define-class-attributes~=0.2",
-    "httpx~=0.28",
-    "isort~=6.0",
-    "mypy~=1.11",
+    "niquests~=3.21",
+    "isort~=9.0",
+    "mypy~=2.2",
     "pre-commit~=4.0",
     "python-dotenv~=1.0",
     "ruff~=0.6",
@@ -55,7 +54,7 @@ line-length = 100
 
 [tool.isort]
 case_sensitive = true
-known_first_party = "skyportal,tests,secrets"
+known_first_party = "skyportal,tests"
 no_lines_before = "LOCALFOLDER"
 order_by_type = false
 profile = "black"
@@ -85,5 +84,5 @@ module-name = "skyportal"
 module-root = ""
 
 [build-system]
-requires = ["uv_build"]
+requires = ["uv_build>=0.12.3,<0.13"]
 build-backend = "uv_build"

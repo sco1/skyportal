@@ -1,3 +1,4 @@
+import os
 import ssl
 import time
 from collections import OrderedDict
@@ -10,12 +11,22 @@ from adafruit_featherwing import tft_featherwing_35
 from adafruit_touchscreen import map_range
 from adafruit_tsc2007 import TSC2007
 
-from secrets import secrets
+from skyportal import USER_AGENT
+from skyportal.maplib import AIO_KEY, AIO_USERNAME
 from skyportal.networklib import build_url, urlencode
 
-# Time service API requires AIO username & API key from secrets
-TIME_SERVICE = f"https://io.adafruit.com/api/v2/{secrets['aio_username']}/integrations/time/strftime"  # noqa: E501
+# Time service API requires AIO username & API key
+TIME_SERVICE = (
+    f"https://io.adafruit.com/api/v2/{AIO_USERNAME}/integrations/time/strftime"  # noqa: E501
+)
 TIME_SERVICE_FORMAT = r"%Y-%m-%d %H:%M:%S.%L %j %u %z %Z"
+
+WIFI_SSID = os.getenv("CIRCUITPY_WIFI_SSID", None)
+if WIFI_SSID is None:
+    raise Exception("CIRCUITPY_WIFI_SSID could not be located, please check settings.toml")
+WIFI_PWD = os.getenv("CIRCUITPY_WIFI_PASSWORD", None)
+if WIFI_PWD is None:
+    raise Exception("CIRCUITPY_WIFI_PASSWORD could not be located, please check settings.toml")
 
 
 class FeatherS3:
@@ -31,9 +42,11 @@ class FeatherS3:
         * A `display` attribute, allowing access to the screen's `root_display` for rendering
         * A `touchscreen` attribute, exposing the device-specific touchscreen handler
         * A `get_local_time` method to query AIO for the current local timestamp
-        * A `utc_offset` property to fetch the local UTC offset from AIO
+        * A `utc_offset` property, set during initialization
         * `width` & `height` pixel screen size properties
     """
+
+    session: adafruit_requests.Session
 
     def __init__(self, tz: str) -> None:
         """
@@ -45,7 +58,7 @@ class FeatherS3:
         On initialization:
             * Initialize the touchscreen display, which should also attempt to mount the SD card
             * Initialize the WiFi connection to the configured network & create a request session
-            * Initialize the internal clock to the local time provided by AIO
+            * Initialize the internal clock & UTC offset to the local time provided by AIO
             * Initialize the touchscreen handler
         """
         self.tz = tz
@@ -53,11 +66,14 @@ class FeatherS3:
 
         # I'm not sure why at the moment, but setting the RTC needs to be before the display is
         # initialized otherwise it gets stuck on a white screen
-        self._set_rtc_from_timestr(self.get_local_time())
+        local_timestamp = self.get_local_time()
+        self._set_rtc_from_timestr(local_timestamp)
+        self.utc_offset = local_timestamp.split()[4]
 
         # This should also attempt to mount the SD card
         self._fw = tft_featherwing_35.TFTFeatherWing35V2()
         self.display = self._fw.display
+        self.display.rotation = 180
 
         # Default assumes portrait but we're in landscape
         self._fw.touchscreen.swap_xy = True
@@ -82,7 +98,7 @@ class FeatherS3:
 
     def connect(self) -> None:
         """Connect to the WiFi network specified `secrets` & initialize a request session."""
-        wifi.radio.connect(secrets["ssid"], secrets["password"])
+        wifi.radio.connect(WIFI_SSID, WIFI_PWD)
         print("Wifi connected")
 
         pool = socketpool.SocketPool(wifi.radio)
@@ -119,7 +135,7 @@ class FeatherS3:
         """
         adaIO_params = OrderedDict(
             [
-                ("x-aio-key", secrets["aio_key"]),
+                ("x-aio-key", AIO_KEY),
                 ("tz", self.tz),
                 ("fmt", urlencode(TIME_SERVICE_FORMAT)),
             ]
@@ -127,18 +143,11 @@ class FeatherS3:
         query_url = build_url(TIME_SERVICE, adaIO_params)
 
         print(f"Querying local time for '{self.tz}'")
-        resp = self.session.get(query_url)
+        resp = self.session.get(query_url, headers={"User-Agent": USER_AGENT})
         if resp.status_code != 200:
             raise RuntimeError("Error fetching local time from AIO")
 
         return resp.text  # type: ignore[no-any-return]
-
-    @property
-    def utc_offset(self) -> str:
-        """Query AIO for the local UTC offset based on the configured TZ."""
-        # The query to AIO returns as "%Y-%m-%d %H:%M:%S.%L %j %u %z %Z"
-        timestamp = self.get_local_time()
-        return timestamp.split()[4]
 
 
 class TouchscreenHandler:  # noqa: D101

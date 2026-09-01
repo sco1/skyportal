@@ -24,6 +24,12 @@ try:
     class HasRootGroup(t.Protocol):  # noqa: D101
         root_group: displayio.Group
 
+    class TouchscreenHandlerP(t.Protocol):  # noqa: D101
+        _is_pressed: bool
+
+        @property
+        def touch_point(self) -> tuple[int, int, int] | None: ...  # noqa: D102
+
 except ImportError:
     pass
 
@@ -235,6 +241,7 @@ class AircraftInfoBox:
 class SkyPortalUI:  # noqa: D101
     device: PyPortal | FeatherS3
     display: HasRootGroup
+    touchscreen_handler: TouchscreenHandlerP
 
     main_display_group: displayio.Group
     aircraft_display_group: displayio.Group
@@ -494,4 +501,4 @@ def dist(p: tuple[int, int], q: tuple[int, int]) -> float:
     Taken from https://docs.python.org/3/library/math.html#math.dist since CircuitPython's `math`
     library doesn't have this yet.
     """
-    return math.sqrt(sum((px - qx) ** 2.0 for px, qx in zip(p, q, strict=False)))
+    return math.sqrt(sum((px - qx) ** 2.0 for px, qx in zip(p, q)))  # noqa: B905

@@ -185,6 +185,40 @@ class AircraftState:  # noqa: D101
         )
 
     @classmethod
+    def from_fr24(cls, state_vector: dict) -> AircraftState:
+        """
+        Build an aircraft state from the provided FlightRadar24 state vector.
+
+        See: https://fr24api.flightradar24.com/docs/endpoints/overview#live-flight-positions-light
+        for field schemas.
+
+        NOTE: Skyportal assumes only FR24's light schema is used; while the full schema also
+        contains the relevant information, the additional fields are ignored.
+        """
+        # FR24 does not report a boolean for whether the aircraft is on the ground or not
+        # Empirically, it seems like barometric altitude is reported as 0 for aircraft that are on
+        # the ground (e.g. flights taking off from KDEN are at 0 ft until they take off & jump to
+        # ~5200 ft.)
+        if state_vector["alt"] == 0:
+            on_ground = True
+        else:
+            on_ground = False
+
+        return cls(
+            icao=state_vector["hex"],
+            callsign=state_vector["callsign"],
+            lat=state_vector["lat"],
+            lon=state_vector["lon"],
+            track=state_vector["track"],
+            velocity_mps=state_vector["gs"] * 0.5144,  # Provided in kts
+            on_ground=on_ground,
+            baro_altitude_m=state_vector["alt"],
+            geo_altitude_m=None,  # Not provided
+            vertical_rate_mps=state_vector["vspeed"] * 0.00508,  # Provided in fpm
+            aircraft_category=0,  # Not provided
+        )
+
+    @classmethod
     def from_proxy(cls, state_vector: dict) -> AircraftState:
         """
         Build an aircraft state from the provided proxy server state vector.

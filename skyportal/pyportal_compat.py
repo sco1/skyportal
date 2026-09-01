@@ -13,7 +13,7 @@ class PyPortal:
         * A `display` attribute, allowing access to the screen's `root_display` for rendering
         * A `touchscreen` attribute, exposing the device-specific touchscreen handler
         * A `get_local_time` method to query AIO for the current local timestamp
-        * A `utc_offset` property to fetch the local UTC offset from AIO
+        * A `utc_offset` property, set during initialization
         * `width` & `height` pixel screen size properties
     """
 
@@ -29,6 +29,7 @@ class PyPortal:
             * Initialize the WiFi connection to the configured network & create a request session
                 * The PyPortal's internal method also sets the device's internal clock
             * Initialize the touchscreen handler
+            * Initialize the UTC offset
         """
         self.tz = tz
         self.device = AdaPyPortal()  # This also takes care of mounting the SD to /sd
@@ -40,6 +41,9 @@ class PyPortal:
 
         self.display = board.DISPLAY
         self.touchscreen = TouchscreenHandler(screen_width=self.width, screen_height=self.height)
+
+        timestamp = self.get_local_time()
+        self.utc_offset = timestamp.split()[4]
 
     @property
     def width(self) -> int:  # noqa: D102
@@ -62,13 +66,6 @@ class PyPortal:
         # The internal PyPortal query to AIO returns as "%Y-%m-%d %H:%M:%S.%L %j %u %z %Z"
         # The internal method also sets the internal clock
         return self.device.get_local_time(location=self.tz)  # type: ignore[no-any-return]
-
-    @property
-    def utc_offset(self) -> str:
-        """Query AIO for the local UTC offset based on the configured TZ."""
-        # The query to AIO returns as "%Y-%m-%d %H:%M:%S.%L %j %u %z %Z"
-        timestamp = self.get_local_time()
-        return timestamp.split()[4]
 
 
 class TouchscreenHandler:  # noqa: D101
