@@ -42,7 +42,7 @@ class FeatherS3:
         * A `display` attribute, allowing access to the screen's `root_display` for rendering
         * A `touchscreen` attribute, exposing the device-specific touchscreen handler
         * A `get_local_time` method to query AIO for the current local timestamp
-        * A `utc_offset` property to fetch the local UTC offset from AIO
+        * A `utc_offset` property, set during initialization
         * `width` & `height` pixel screen size properties
     """
 
@@ -58,7 +58,7 @@ class FeatherS3:
         On initialization:
             * Initialize the touchscreen display, which should also attempt to mount the SD card
             * Initialize the WiFi connection to the configured network & create a request session
-            * Initialize the internal clock to the local time provided by AIO
+            * Initialize the internal clock & UTC offset to the local time provided by AIO
             * Initialize the touchscreen handler
         """
         self.tz = tz
@@ -66,7 +66,9 @@ class FeatherS3:
 
         # I'm not sure why at the moment, but setting the RTC needs to be before the display is
         # initialized otherwise it gets stuck on a white screen
-        self._set_rtc_from_timestr(self.get_local_time())
+        local_timestamp = self.get_local_time()
+        self._set_rtc_from_timestr(local_timestamp)
+        self.utc_offset = local_timestamp.split()[4]
 
         # This should also attempt to mount the SD card
         self._fw = tft_featherwing_35.TFTFeatherWing35V2()
@@ -146,13 +148,6 @@ class FeatherS3:
             raise RuntimeError("Error fetching local time from AIO")
 
         return resp.text  # type: ignore[no-any-return]
-
-    @property
-    def utc_offset(self) -> str:
-        """Query AIO for the local UTC offset based on the configured TZ."""
-        # The query to AIO returns as "%Y-%m-%d %H:%M:%S.%L %j %u %z %Z"
-        timestamp = self.get_local_time()
-        return timestamp.split()[4]
 
 
 class TouchscreenHandler:  # noqa: D101
