@@ -16,6 +16,7 @@ select = [
     "F",    # Pyflakes
     "FIX",  # flake8-fixme
     "N",    # pep8-naming
+    "RUF",  # Ruff checks
     "W",    # pycodestyle
 ]
 

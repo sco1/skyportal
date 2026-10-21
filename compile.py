@@ -29,12 +29,12 @@ if __name__ == "__main__":
 
     print(f"Found {len(to_compile)} *.py files to compile")
     for filepath in to_compile:
-        subprocess.run([COMPILERS[platform.system()], filepath])
+        subprocess.run([COMPILERS[platform.system()], filepath], check=True)
 
     compiled = list(SOURCE_DIR.glob("*.mpy"))
     if len(compiled) != len(to_compile):
         raise RuntimeError(
-            f"Number of compiled files less than original source ({len(compiled)} < {len(to_compile)}), may need a longer wait"  # noqa: E501
+            f"Number of compiled files does not match original source ({len(compiled)} != {len(to_compile)})"  # noqa: E501
         )
 
     print(f"Compiled {len(compiled)} files ... moving to {DEST_DIR}")

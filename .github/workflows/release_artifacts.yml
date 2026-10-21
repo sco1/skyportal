@@ -3,100 +3,88 @@ name: Build Release Artifacts
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag"
+        required: true
+        type: string
 
 jobs:
   artifacts:
-    name: Package & upload release artifacts
+    name: Package & upload release artifacts (${{ matrix.platform }})
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      TAG: ${{ inputs.tag || github.event.release.tag_name }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: pyportal
+            hardware: pyportal
+            compat: feather_compat.py
+            extra_files: ./pyportal_startup.bmp ./pyportal_startup.wav
+          - platform: feather
+            hardware: featherS3
+            compat: pyportal_compat.py
+            extra_files: ""
 
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ env.TAG }}
 
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
         with:
           python-version-file: "pyproject.toml"
 
-      - name: Build base bundle
-        run: |
-          tar -cvf bundle_base.tar \
-            ./boot.py              \
-            ./code.py              \
-            ./settings.toml        \
-            ./skyportal_config.py
+      - name: Make mpy-cross executable
+        run: chmod +x ./mpy-cross/mpy-cross-linux-amd64-*.static
 
-      - name: Build PyPortal bundle base
+      # Normalize archive metadata so bundles are reproducible from the same commit
+      - name: Set tar options
         run: |
-          mkdir -p ./tmp/assets
+          echo "TAR_OPTS=--sort=name --owner=0 --group=0 --numeric-owner --mtime=@$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
+
+      - name: Build bundle base
+        run: |
+          mkdir -p ./tmp/assets ./tmp/lib
+          cp ./boot.py ./code.py ./settings.toml ./skyportal_config.py ./tmp/
+
           cp ./assets/* ./tmp/assets
-          cp ./tmp/assets/default_map_pyportal.bmp ./tmp/assets/default_map.bmp
+          cp ./tmp/assets/default_map_${{ matrix.hardware }}.bmp ./tmp/assets/default_map.bmp
           rm ./tmp/assets/default_map_*.bmp
 
-          mkdir -p ./tmp/lib
-          cp -r ./lib_by_platform/pyportal/lib/* ./tmp/lib
+          cp -r ./lib_by_platform/${{ matrix.hardware }}/lib/* ./tmp/lib
 
-          cp ./pyportal_startup.bmp ./tmp/
-          cp ./pyportal_startup.wav ./tmp/
+          for f in ${{ matrix.extra_files }}; do
+            cp "$f" ./tmp/
+          done
 
-          cp bundle_base.tar pyportal_bundle_base.tar
-          tar -rvf pyportal_bundle_base.tar -C ./tmp/ .
+          tar $TAR_OPTS -cvf bundle_base.tar -C ./tmp/ .
 
-      - name: Create non-compiled PyPortal bundle
+      - name: Create non-compiled bundle
         run: |
-          cp pyportal_bundle_base.tar skyportal_bundle_pyportal.tar
-          tar -rvf skyportal_bundle_pyportal.tar ./skyportal/*
-          tar -vf skyportal_bundle_pyportal.tar --delete ./skyportal/feather_compat.py
-          gzip skyportal_bundle_pyportal.tar
+          cp bundle_base.tar skyportal_bundle_${{ matrix.platform }}.tar
+          tar $TAR_OPTS -rvf skyportal_bundle_${{ matrix.platform }}.tar ./skyportal/*
+          tar -vf skyportal_bundle_${{ matrix.platform }}.tar --delete ./skyportal/${{ matrix.compat }}
+          gzip -n skyportal_bundle_${{ matrix.platform }}.tar
 
-      - name: Compile skyportal lib for PyPortal
+      - name: Compile skyportal lib
         run: |
-          python ./compile.py pyportal
+          python ./compile.py ${{ matrix.platform }}
 
-      - name: Create compiled PyPortal bundle
+      - name: Create compiled bundle
         run: |
-          cp pyportal_bundle_base.tar skyportal_bundle_pyportal_compiled.tar
-          tar -rvf skyportal_bundle_pyportal_compiled.tar -C ./dist/ .
-          gzip skyportal_bundle_pyportal_compiled.tar
-
-      - name: PyPortal Cleanup
-        run: |
-          rm -rf ./tmp
-          rm -rf ./dist
-          rm -f pyportal_bundle_base.tar
-
-      - name: Build Feather bundle base
-        run: |
-          mkdir -p ./tmp/assets
-          cp ./assets/* ./tmp/assets
-          cp ./tmp/assets/default_map_featherS3.bmp ./tmp/assets/default_map.bmp
-          rm ./tmp/assets/default_map_*.bmp
-
-          mkdir -p ./tmp/lib
-          cp -r ./lib_by_platform/featherS3/lib/* ./tmp/lib
-
-          cp bundle_base.tar feather_bundle_base.tar
-          tar -rvf feather_bundle_base.tar -C ./tmp/ .
-
-      - name: Create non-compiled FeatherS3 bundle
-        run: |
-          cp feather_bundle_base.tar skyportal_bundle_feather.tar
-          tar -rvf skyportal_bundle_feather.tar ./skyportal/*
-          tar -vf skyportal_bundle_feather.tar --delete ./skyportal/pyportal_compat.py
-          gzip skyportal_bundle_feather.tar
-
-      - name: Compile skyportal lib for FeatherS3
-        run: |
-          python ./compile.py feather
-
-      - name: Create compiled FeatherS3 bundle
-        run: |
-          cp feather_bundle_base.tar skyportal_bundle_feather_compiled.tar
-          tar -rvf skyportal_bundle_feather_compiled.tar -C ./dist/ .
-          gzip skyportal_bundle_feather_compiled.tar
+          cp bundle_base.tar skyportal_bundle_${{ matrix.platform }}_compiled.tar
+          tar $TAR_OPTS -rvf skyportal_bundle_${{ matrix.platform }}_compiled.tar -C ./dist/ ./lib/skyportal
+          gzip -n skyportal_bundle_${{ matrix.platform }}_compiled.tar
 
       - name: Upload artifacts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ github.event.release.tag_name }} skyportal_bundle_*.tar.gz
+        run: gh release upload "$TAG" skyportal_bundle_*.tar.gz --clobber --repo ${{ github.repository }}
